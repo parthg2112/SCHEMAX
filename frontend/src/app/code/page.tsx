@@ -109,7 +109,7 @@ function CodePageContent() {
     }
 
     return (
-        <div className="h-screen w-full pt-20 pb-4 px-4 flex flex-col">
+        <div className="h-screen w-full pt-16 pb-4 px-4 flex flex-col">
             <div className="flex-1 rounded-xl border bg-background shadow-sm overflow-hidden flex flex-col">
                 {/* Toolbar */}
                 <div className="h-12 border-b flex items-center justify-between px-4 bg-muted/20">

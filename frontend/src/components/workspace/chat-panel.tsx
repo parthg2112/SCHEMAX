@@ -5,6 +5,7 @@ import { Send, Bot, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useWorkspace } from "@/contexts/workspace-context"
 
 interface Message {
     id: string
@@ -18,6 +19,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ projectId }: ChatPanelProps) {
+    const { setErdData } = useWorkspace()
     const [messages, setMessages] = React.useState<Message[]>([
         {
             id: "1",
@@ -29,6 +31,57 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
     const [input, setInput] = React.useState("")
     const [isLoading, setIsLoading] = React.useState(false)
     const [streamedContent, setStreamedContent] = React.useState("")
+    const [isLoadingMessages, setIsLoadingMessages] = React.useState(true)
+
+    // Load messages on mount
+    React.useEffect(() => {
+        const loadMessages = async () => {
+            try {
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const res = await fetch(`${backendUrl}/project/${projectId}`, {
+                    credentials: 'include',
+                })
+
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.project?.messages && data.project.messages.length > 0) {
+                        const loadedMessages = data.project.messages.map((msg: any) => ({
+                            id: msg.id,
+                            role: msg.role as "user" | "assistant",
+                            content: msg.content,
+                            timestamp: new Date(msg.createdAt),
+                        }))
+                        setMessages(loadedMessages)
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load messages:", error)
+            } finally {
+                setIsLoadingMessages(false)
+            }
+        }
+        loadMessages()
+    }, [projectId])
+
+    // Save messages when they change (debounced)
+    React.useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (messages.length > 1 && !isLoadingMessages) { // Skip if only welcome message
+                try {
+                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                    await fetch(`${backendUrl}/project/${projectId}/messages`, {
+                        method: "POST",
+                        credentials: 'include',
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ messages }),
+                    })
+                } catch (error) {
+                    console.error("Failed to save messages:", error)
+                }
+            }
+        }, 1000)
+        return () => clearTimeout(timer)
+    }, [messages, projectId, isLoadingMessages])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -50,6 +103,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
             const response = await fetch(`${backendUrl}/erd/generate?projectId=${projectId}`, {
                 method: "POST",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -71,8 +125,25 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                 const { value, done: doneReading } = await reader.read()
                 done = doneReading
                 const chunkValue = decoder.decode(value)
-                accumulatedContent += chunkValue
-                setStreamedContent((prev) => prev + chunkValue)
+
+                // Process SSE chunks
+                const lines = chunkValue.split('\n')
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const jsonStr = line.slice(6)
+                            if (jsonStr === '[DONE]') continue
+
+                            const data = JSON.parse(jsonStr)
+                            if (data.type === 'text-delta' && data.delta) {
+                                accumulatedContent += data.delta
+                                setStreamedContent((prev) => prev + data.delta)
+                            }
+                        } catch (e) {
+                            console.error('Error parsing SSE data:', e)
+                        }
+                    }
+                }
             }
 
             setMessages((prev) => [
@@ -85,6 +156,15 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                 },
             ])
             setStreamedContent("")
+
+            // Parse Mermaid and emit to canvas
+            try {
+                const { parseMermaidERD } = await import("@/lib/mermaid-parser")
+                const erdData = parseMermaidERD(accumulatedContent)
+                setErdData(erdData)
+            } catch (parseError) {
+                console.error("Failed to parse ERD:", parseError)
+            }
         } catch (error) {
             console.error(error)
             setMessages((prev) => [
@@ -172,12 +252,17 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                 >
                     <Input
                         placeholder="Describe your database..."
-                        className="flex-1"
+                        className="flex-1 backdrop-blur-sm rounded-full border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[#1f1f1f57] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 focus-visible:ring-1 focus-visible:ring-gray-400 dark:focus-visible:ring-white/30"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         disabled={isLoading}
                     />
-                    <Button type="submit" size="icon" disabled={isLoading}>
+                    <Button
+                        type="submit"
+                        size="icon"
+                        disabled={isLoading}
+                        className="rounded-full h-10 w-10 backdrop-blur-sm border border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[#1f1f1f57] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white"
+                    >
                         <Send className="h-4 w-4" />
                         <span className="sr-only">Send</span>
                     </Button>

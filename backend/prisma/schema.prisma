@@ -73,15 +73,30 @@ model Verification {
 }
 
 model Project {
-  id           String   @id
+  id           String        @id
   name         String
   ownerId      String
-  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   prismaSchema String?
   codeBaseUrl  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  erdData      String?       @db.Text
+  canvasData   String?       @db.Text
+  messages     ChatMessage[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@index([ownerId])
   @@map("project")
+}
+
+model ChatMessage {
+  id        String   @id
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      String   // "user" or "assistant"
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@map("chat_message")
 }

@@ -6,7 +6,7 @@ const generatePrismaHandler = async (
     req: Request & {
         query: { projectId: string };
         body: {
-            image: string;
+            image?: string;
             prompt: string;
             history: { content: string; role: "user" | "assistant" }[];
         };
@@ -35,13 +35,10 @@ const generatePrismaHandler = async (
     const prompt = req.body.prompt || "";
     const history = req.body.history || [];
 
-    if (!image) {
-        return res.status(400).json({ error: "Image is required" });
-    }
-
+    // Image is now optional - can work with text-only prompts
     const instructions = `
-Generate Prisma v7 schema for the database represented in the image.
-The image is a diagram of the database structure.
+Generate Prisma v7 schema for the database${image ? " represented in the image" : ""}.
+${image ? "The image is a diagram of the database structure." : ""}
 Do not include any explanations or additional text, just the Prisma schema.
 Do not use markdown formatting.
 
@@ -49,22 +46,25 @@ Use the following requirements to guide the schema generation:
 ${prompt}
 `;
 
+    const contentParts: any[] = [{
+        type: "text",
+        text: instructions,
+    }];
+
+    if (image) {
+        contentParts.push({
+            type: "image",
+            image: "data:image/png;base64," + image,
+        });
+    }
+
     const result = streamText({
         model: googleAi("gemini-2.5-flash"),
         messages: [
             ...history,
             {
                 role: "user",
-                content: [
-                    {
-                        type: "text",
-                        text: instructions,
-                    },
-                    {
-                        type: "image",
-                        image: "data:image/png;base64," + image,
-                    },
-                ],
+                content: contentParts,
             },
         ],
         onFinish: async ({ text }) => {

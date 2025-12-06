@@ -370,6 +370,7 @@ export default function LoginPage() {
 
       // 1. Get existing projects
       const res = await fetch(`${backendUrl}/project`, {
+        credentials: 'include', // Include cookies for auth
         headers: {
           // Better Auth should handle cookies automatically if on same domain or properly configured CORS
           // If not, we might need to pass headers manually, but usually cookies are enough
@@ -388,6 +389,7 @@ export default function LoginPage() {
       // 2. If no projects, create one
       const createRes = await fetch(`${backendUrl}/project`, {
         method: "POST",
+        credentials: 'include', // Include cookies for auth
         headers: {
           "Content-Type": "application/json"
         },

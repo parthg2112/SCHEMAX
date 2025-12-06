@@ -1,8 +1,10 @@
 import { streamText } from "ai";
 import { googleAi } from "../lib/google-ai";
+import { prisma } from "../lib/db";
 
-const generatePrismaHandler = (
+const generatePrismaHandler = async (
     req: Request & {
+        query: { projectId: string };
         body: {
             image: string;
             prompt: string;
@@ -11,8 +13,22 @@ const generatePrismaHandler = (
     },
     res: Response
 ) => {
-    if (!req.body) {
-        return res.status(400).json({ error: "Invalid request body" });
+    if (!req.body || !req.query) {
+        return res.status(400).json({ error: "Invalid request body or query" });
+    }
+
+    const projectId = req.query.projectId;
+
+    if (!projectId) {
+        return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+    });
+
+    if (!project) {
+        return res.status(404).json({ error: "Could not find project" });
     }
 
     const image = req.body.image || "";
@@ -31,7 +47,7 @@ Do not use markdown formatting.
 
 Use the following requirements to guide the schema generation:
 ${prompt}
-`
+`;
 
     const result = streamText({
         model: googleAi("gemini-2.5-flash"),
@@ -51,6 +67,13 @@ ${prompt}
                 ],
             },
         ],
+        onFinish: async ({ text }) => {
+            console.log("Generation finished:", text);
+            await prisma.project.update({
+                where: { id: projectId },
+                data: { prismaSchema: text },
+            });
+        },
     });
 
     result.pipeUIMessageStreamToResponse(res);

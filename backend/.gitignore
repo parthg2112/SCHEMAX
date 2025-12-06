@@ -3,3 +3,7 @@ node_modules/
 .env.local
 .DS_Store
 
+
+/lib/generated/prisma
+
+/generated/prisma

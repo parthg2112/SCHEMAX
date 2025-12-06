@@ -1,7 +1,7 @@
 import { streamText } from 'ai';
 import { googleAi } from '../lib/google-ai';
 
-const generateErd = (
+const generateErdHandler = (
     req: Request & { body: { requirements: string } },
     res: Response
 ) => {
@@ -32,4 +32,4 @@ ${requirements}
     result.pipeUIMessageStreamToResponse(res);
 };
 
-export { generateErd };
+export { generateErdHandler };

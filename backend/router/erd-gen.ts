@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { generateErd } from "../handlers/erd-gen";
+import { generateErdHandler } from "../handlers/erd-gen";
 
-const erdGenRouter = Router();
+const router = Router();
 
-erdGenRouter.post("/generate", generateErd);
+router.post("/generate", generateErdHandler);
 
-export { erdGenRouter };
+export default router;

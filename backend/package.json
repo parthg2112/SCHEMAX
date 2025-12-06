@@ -19,6 +19,7 @@
     "@types/express": "^5.0.6",
     "ai": "^5.0.108",
     "better-auth": "^1.4.5",
+    "body-parser": "^2.2.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1"
   },

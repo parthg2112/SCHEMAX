@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
-import { Send, Bot, User } from "lucide-react"
+import { Send, Bot, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -14,89 +13,93 @@ interface Message {
     timestamp: Date
 }
 
-export function ChatPanel() {
+interface ChatPanelProps {
+    projectId: string
+}
+
+export function ChatPanel({ projectId }: ChatPanelProps) {
     const [messages, setMessages] = React.useState<Message[]>([
         {
             id: "1",
-            role: "user",
-            content: "Can you help me design an ER diagram for an e-commerce database?",
-            timestamp: new Date(Date.now() - 10000),
-        },
-        {
-            id: "2",
             role: "assistant",
-            content: "I'd be happy to help! An e-commerce database typically needs tables for Users, Products, Orders, and OrderItems. Would you like me to generate a Mermaid diagram for this schema?",
-            timestamp: new Date(Date.now() - 8000),
-        },
-        {
-            id: "3",
-            role: "user",
-            content: "Yes, please include the relationships.",
-            timestamp: new Date(Date.now() - 5000),
+            content: "Hello! Describe your database requirements, and I'll generate a Mermaid ERD for you.",
+            timestamp: new Date(),
         },
     ])
-    const [isTyping, setIsTyping] = React.useState(true)
+    const [input, setInput] = React.useState("")
+    const [isLoading, setIsLoading] = React.useState(false)
     const [streamedContent, setStreamedContent] = React.useState("")
-    const fullResponse = `Here is a sample ER diagram for your e-commerce system:
 
-\`\`\`mermaid
-erDiagram
-    USER ||--o{ ORDER : places
-    USER {
-        string id
-        string email
-        string password_hash
-    }
-    ORDER ||--|{ ORDER_ITEM : contains
-    ORDER {
-        string id
-        string user_id
-        string status
-        datetime created_at
-    }
-    PRODUCT ||--o{ ORDER_ITEM : "included in"
-    PRODUCT {
-        string id
-        string name
-        float price
-        int stock
-    }
-    ORDER_ITEM {
-        string id
-        string order_id
-        string product_id
-        int quantity
-        float price_at_purchase
-    }
-\`\`\`
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!input.trim() || isLoading) return
 
-You can use the canvas on the right to refine this diagram further.`
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: "user",
+            content: input,
+            timestamp: new Date(),
+        }
 
-    React.useEffect(() => {
-        if (!isTyping) return
+        setMessages((prev) => [...prev, userMessage])
+        setInput("")
+        setIsLoading(true)
+        setStreamedContent("")
 
-        let currentIndex = 0
-        const interval = setInterval(() => {
-            if (currentIndex < fullResponse.length) {
-                setStreamedContent((prev) => prev + fullResponse[currentIndex])
-                currentIndex++
-            } else {
-                setIsTyping(false)
-                clearInterval(interval)
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        id: "4",
-                        role: "assistant",
-                        content: fullResponse,
-                        timestamp: new Date(),
-                    },
-                ])
+        try {
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const response = await fetch(`${backendUrl}/erd/generate?projectId=${projectId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ requirements: userMessage.content }),
+            })
+
+            if (!response.ok) {
+                throw new Error("Failed to generate ERD")
             }
-        }, 20) // Typing speed
 
-        return () => clearInterval(interval)
-    }, [])
+            if (!response.body) return
+
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let done = false
+            let accumulatedContent = ""
+
+            while (!done) {
+                const { value, done: doneReading } = await reader.read()
+                done = doneReading
+                const chunkValue = decoder.decode(value)
+                accumulatedContent += chunkValue
+                setStreamedContent((prev) => prev + chunkValue)
+            }
+
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: (Date.now() + 1).toString(),
+                    role: "assistant",
+                    content: accumulatedContent,
+                    timestamp: new Date(),
+                },
+            ])
+            setStreamedContent("")
+        } catch (error) {
+            console.error(error)
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: (Date.now() + 1).toString(),
+                    role: "assistant",
+                    content: "Sorry, something went wrong while generating the ERD.",
+                    timestamp: new Date(),
+                },
+            ])
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     return (
         <div className="flex h-full flex-col bg-background border-r">
@@ -139,7 +142,7 @@ You can use the canvas on the right to refine this diagram further.`
                         </div>
                     </div>
                 ))}
-                {isTyping && (
+                {isLoading && streamedContent && (
                     <div className="flex w-full gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-primary text-primary-foreground">
                             <Bot className="h-4 w-4" />
@@ -150,17 +153,31 @@ You can use the canvas on the right to refine this diagram further.`
                         </div>
                     </div>
                 )}
+                {isLoading && !streamedContent && (
+                    <div className="flex w-full gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-primary text-primary-foreground">
+                            <Bot className="h-4 w-4" />
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Thinking...
+                        </div>
+                    </div>
+                )}
             </div>
             <div className="border-t p-4">
                 <form
                     className="flex gap-2"
-                    onSubmit={(e) => {
-                        e.preventDefault()
-                        // Handle submit
-                    }}
+                    onSubmit={handleSubmit}
                 >
-                    <Input placeholder="Type a message..." className="flex-1" />
-                    <Button type="submit" size="icon">
+                    <Input
+                        placeholder="Describe your database..."
+                        className="flex-1"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        disabled={isLoading}
+                    />
+                    <Button type="submit" size="icon" disabled={isLoading}>
                         <Send className="h-4 w-4" />
                         <span className="sr-only">Send</span>
                     </Button>

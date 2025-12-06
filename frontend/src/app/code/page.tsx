@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Download } from "lucide-react"
+import { Download, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     ResizableHandle,
@@ -10,128 +10,102 @@ import {
 } from "@/components/ui/resizable"
 import { FileExplorer, FileNode } from "@/components/code/file-explorer"
 import { CodeViewer } from "@/components/code/code-viewer"
-
-const MOCK_FILES: FileNode[] = [
-    {
-        id: "root",
-        name: "prisma",
-        type: "folder",
-        children: [
-            {
-                id: "schema",
-                name: "schema.prisma",
-                type: "file",
-                language: "prisma",
-                content: `datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  orders        Order[]
-}
-
-model Product {
-  id          String      @id @default(cuid())
-  name        String
-  price       Decimal
-  stock       Int
-  orderItems  OrderItem[]
-}
-
-model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  status      String
-  createdAt   DateTime    @default(now())
-  items       OrderItem[]
-}
-
-model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id])
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  quantity    Int
-  price       Decimal
-}
-`
-            },
-            {
-                id: "migrations",
-                name: "migrations",
-                type: "folder",
-                children: [
-                    {
-                        id: "migration_sql",
-                        name: "migration.sql",
-                        type: "file",
-                        language: "sql",
-                        content: `-- CreateTable
-CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Product" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "price" DECIMAL(65,30) NOT NULL,
-    "stock" INTEGER NOT NULL,
-
-    CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
-);
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
-`
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        id: "types",
-        name: "types.ts",
-        type: "file",
-        language: "typescript",
-        content: `export type User = {
-  id: string;
-  email: string;
-  createdAt: Date;
-};
-
-export type Product = {
-  id: string;
-  name: string;
-  price: number;
-};
-`
-    }
-]
+import { useSearchParams } from "next/navigation"
 
 export default function CodePage() {
-    const [selectedFile, setSelectedFile] = React.useState<FileNode | null>(MOCK_FILES[0].children![0])
+    return (
+        <React.Suspense fallback={
+            <div className="h-screen w-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        }>
+            <CodePageContent />
+        </React.Suspense>
+    )
+}
+
+function CodePageContent() {
+    const searchParams = useSearchParams()
+    const projectId = searchParams.get("projectId") || ""
+
+    const [files, setFiles] = React.useState<FileNode[]>([])
+    const [selectedFile, setSelectedFile] = React.useState<FileNode | null>(null)
+    const [isLoading, setIsLoading] = React.useState(true)
+    const [error, setError] = React.useState<string | null>(null)
+
+    React.useEffect(() => {
+        if (!projectId) {
+            setError("No Project ID provided")
+            setIsLoading(false)
+            return
+        }
+
+        const fetchProject = async () => {
+            try {
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const res = await fetch(`${backendUrl}/project/${projectId}`)
+
+                if (!res.ok) throw new Error("Failed to fetch project")
+
+                const data = await res.json()
+                const project = data.project
+
+                if (!project) throw new Error("Project not found")
+
+                // Construct file structure
+                const prismaSchema = project.prismaSchema || "// No schema generated yet"
+
+                const generatedFiles: FileNode[] = [
+                    {
+                        id: "root",
+                        name: "prisma",
+                        type: "folder",
+                        children: [
+                            {
+                                id: "schema",
+                                name: "schema.prisma",
+                                type: "file",
+                                language: "prisma",
+                                content: prismaSchema
+                            }
+                        ]
+                    }
+                ]
+
+                setFiles(generatedFiles)
+                // Select schema.prisma by default
+                if (generatedFiles[0].children) {
+                    setSelectedFile(generatedFiles[0].children[0])
+                }
+            } catch (err) {
+                console.error(err)
+                setError("Failed to load project code")
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchProject()
+    }, [projectId])
 
     const handleDownload = () => {
-        alert("Downloading generated code as ZIP...")
+        alert("Downloading generated code as ZIP... (Feature coming soon)")
+    }
+
+    if (isLoading) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center text-red-500">
+                {error}
+            </div>
+        )
     }
 
     return (
@@ -152,7 +126,7 @@ export default function CodePage() {
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
                             <FileExplorer
-                                files={MOCK_FILES}
+                                files={files}
                                 selectedFileId={selectedFile?.id || null}
                                 onSelectFile={setSelectedFile}
                             />

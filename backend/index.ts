@@ -22,13 +22,24 @@ app.use(cors({
 
 app.options(/.*/, cors()); // Enable pre-flight for all routes
 
+// Mount Better Auth handler BEFORE express.json()
+app.all("/api/auth/*splat", toNodeHandler(auth));
+
+// Mount express.json() AFTER Better Auth handler
 app.use(express.json({ limit: "1000mb" }));
+
 const port = process.env.PORT || 3001;
 
-app.all(/^\/api\/auth\/.*/, toNodeHandler(auth));
 app.use("/erd", erdGenRouter);
 app.use("/prisma", prismaGenRouter);
 app.use("/project", projectRouter);
+
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Error occurred:", err);
+    console.error("Stack trace:", err.stack);
+    res.status(500).json({ error: err.message || "Internal server error" });
+});
 
 app.listen(port, () => {
     console.log(`Listening on port ${port}`);

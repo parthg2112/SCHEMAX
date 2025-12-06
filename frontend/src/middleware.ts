@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
 
     // Simple check for session token existence
     // For more robust server-side validation, we would need to call the backend
-    if (!sessionToken && (request.nextUrl.pathname.startsWith('/workspace') || request.nextUrl.pathname.startsWith('/code'))) {
+    if (!sessionToken && !(request.nextUrl.pathname.startsWith('/workspace') || request.nextUrl.pathname.startsWith('/code'))) {
         return NextResponse.redirect(new URL('/', request.url))
     }
 

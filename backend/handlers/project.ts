@@ -224,7 +224,8 @@ const getProjectCodeHandler = async (req: Request, res: Response) => {
             return;
         }
 
-        const boilerplatePath = path.join(process.cwd(), 'templates', 'boilerplate');
+        const ormType = project.ormType || 'prisma';
+        const boilerplatePath = path.join(process.cwd(), 'templates', ormType);
 
         // Helper to recursively read directory
         const readDir = (dirPath: string, relativePath: string = ''): any[] => {
@@ -250,8 +251,17 @@ const getProjectCodeHandler = async (req: Request, res: Response) => {
                 } else {
                     let content = '';
                     try {
-                        // Inject generated schema if it's the schema file
-                        if (item === 'schema.prisma' && relativePath.includes('prisma')) {
+                        // Inject generated schema based on ORM type
+                        let isSchemaFile = false;
+                        if (ormType === 'prisma' && item === 'schema.prisma' && relativePath.includes('prisma')) {
+                            isSchemaFile = true;
+                        } else if (ormType === 'drizzle' && item === 'schema.ts' && relativePath.includes('db')) {
+                            isSchemaFile = true;
+                        } else if (ormType === 'sql' && item === 'init.sql') {
+                            isSchemaFile = true;
+                        }
+
+                        if (isSchemaFile) {
                             content = project.prismaSchema || fs.readFileSync(fullPath, 'utf-8');
                         } else {
                             // Only read text files, skip binaries/images for now to save bandwidth

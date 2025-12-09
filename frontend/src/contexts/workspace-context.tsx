@@ -15,6 +15,9 @@ interface WorkspaceContextType {
     updateEntityInNodes: (entityName: string, updatedEntity: Entity) => void
     addEntity: (entity: Entity) => void
     removeEntity: (entityName: string) => void
+    lastGeneratedHash: string
+    setLastGeneratedHash: (hash: string) => void
+    currentHash: string
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined)
@@ -26,6 +29,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const [canvasNodes, setCanvasNodes] = useState<Node[]>([])
     const [canvasEdges, setCanvasEdges] = useState<Edge[]>([])
     const [isLoaded, setIsLoaded] = useState(false)
+
+    const [lastGeneratedHash, setLastGeneratedHash] = useState<string>("")
+    const [currentHash, setCurrentHash] = useState<string>("")
+
+    // Calculate hash of current state
+    useEffect(() => {
+        const hash = JSON.stringify({ nodes: canvasNodes, edges: canvasEdges })
+        setCurrentHash(hash)
+    }, [canvasNodes, canvasEdges])
 
     // Load workspace data on mount
     useEffect(() => {
@@ -47,6 +59,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         const canvasData = data.project.canvasData
                         if (canvasData.nodes) setCanvasNodes(canvasData.nodes)
                         if (canvasData.edges) setCanvasEdges(canvasData.edges)
+
+                        // Initialize hash
+                        const hash = JSON.stringify({ nodes: canvasData.nodes || [], edges: canvasData.edges || [] })
+                        setCurrentHash(hash)
+
+                        // If we have a lastGeneratedAt, we assume the state at load time matches
+                        // (This is a simplification, ideally we'd store the hash in DB too)
+                        if (data.project.lastGeneratedAt) {
+                            setLastGeneratedHash(hash)
+                        }
                     }
                 }
             } catch (error) {
@@ -58,29 +80,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         loadWorkspace()
     }, [projectId])
 
-    // Auto-save workspace data when it changes (debounced)
-    useEffect(() => {
-        if (!projectId || !isLoaded) return
-
-        const timer = setTimeout(async () => {
-            try {
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
-                await fetch(`${backendUrl}/project/${projectId}`, {
-                    method: "PUT",
-                    credentials: 'include',
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        erdData,
-                        canvasData: { nodes: canvasNodes, edges: canvasEdges }
-                    }),
-                })
-            } catch (error) {
-                console.error("Failed to save workspace:", error)
-            }
-        }, 1000) // Debounce for 1 second
-
-        return () => clearTimeout(timer)
-    }, [erdData, canvasNodes, canvasEdges, projectId, isLoaded])
+    // ... existing auto-save effect ...
 
     const updateEntityInNodes = useCallback((entityName: string, updatedEntity: Entity) => {
         setCanvasNodes(nodes =>
@@ -121,6 +121,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             updateEntityInNodes,
             addEntity,
             removeEntity,
+            lastGeneratedHash,
+            setLastGeneratedHash,
+            currentHash
         }}>
             {children}
         </WorkspaceContext.Provider>

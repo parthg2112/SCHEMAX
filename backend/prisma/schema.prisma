@@ -81,6 +81,8 @@ model Project {
   codeBaseUrl  String?
   erdData      String?       @db.Text
   canvasData   String?       @db.Text
+  ormType      String        @default("prisma") // "prisma", "drizzle", "sql"
+  lastGeneratedAt DateTime?
   messages     ChatMessage[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

@@ -1,6 +1,7 @@
 import { streamText } from "ai";
 import { googleAi } from "../lib/google-ai";
 import { prisma } from "../lib/db";
+import { Request, Response } from "express";
 
 const generatePrismaHandler = async (
     req: Request & {
@@ -9,6 +10,7 @@ const generatePrismaHandler = async (
             image?: string;
             prompt: string;
             history: { content: string; role: "user" | "assistant" }[];
+            ormType?: string;
         };
     },
     res: Response
@@ -34,13 +36,31 @@ const generatePrismaHandler = async (
     const image = req.body.image || "";
     const prompt = req.body.prompt || "";
     const history = req.body.history || [];
+    const ormType = req.body.ormType || "prisma";
 
-    // Image is now optional - can work with text-only prompts
-    const instructions = `
-Generate Prisma v7 schema for the database${image ? " represented in the image" : ""}.
+    let systemPrompt = "";
+    if (ormType === "drizzle") {
+        systemPrompt = `Generate Drizzle ORM schema (TypeScript) for the database${image ? " represented in the image" : ""}.
+${image ? "The image is a diagram of the database structure." : ""}
+Do not include any explanations or additional text, just the Drizzle schema code.
+Do not use markdown formatting.
+Use 'pg-core' for PostgreSQL types.
+Export the tables consts.`;
+    } else if (ormType === "sql") {
+        systemPrompt = `Generate raw PostgreSQL SQL schema for the database${image ? " represented in the image" : ""}.
+${image ? "The image is a diagram of the database structure." : ""}
+Do not include any explanations or additional text, just the SQL code.
+Do not use markdown formatting.`;
+    } else {
+        // Default Prisma
+        systemPrompt = `Generate Prisma v7 schema for the database${image ? " represented in the image" : ""}.
 ${image ? "The image is a diagram of the database structure." : ""}
 Do not include any explanations or additional text, just the Prisma schema.
-Do not use markdown formatting.
+Do not use markdown formatting.`;
+    }
+
+    const instructions = `
+${systemPrompt}
 
 Use the following requirements to guide the schema generation:
 ${prompt}
@@ -71,7 +91,11 @@ ${prompt}
             console.log("Generation finished:", text);
             await prisma.project.update({
                 where: { id: projectId },
-                data: { prismaSchema: text },
+                data: {
+                    prismaSchema: text,
+                    ormType: ormType,
+                    lastGeneratedAt: new Date()
+                },
             });
         },
     });

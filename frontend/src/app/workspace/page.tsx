@@ -11,13 +11,11 @@ import { ChatPanel } from "@/components/workspace/chat-panel"
 import { CanvasPanel } from "@/components/workspace/canvas-panel"
 import { WorkspaceProvider } from "@/contexts/workspace-context"
 
+import { CanvasLoader } from "@/components/canvas-loader"
+
 export default function WorkspacePage() {
     return (
-        <React.Suspense fallback={
-            <div className="h-screen w-full flex items-center justify-center">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
-        }>
+        <React.Suspense fallback={<CanvasLoader />}>
             <WorkspacePageContent />
         </React.Suspense>
     )
@@ -26,6 +24,18 @@ export default function WorkspacePage() {
 function WorkspacePageContent() {
     const searchParams = useSearchParams()
     const projectId = searchParams.get("projectId") || ""
+    const [isLoading, setIsLoading] = React.useState(true)
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false)
+        }, 2000)
+        return () => clearTimeout(timer)
+    }, [])
+
+    if (isLoading) {
+        return <CanvasLoader />
+    }
 
     if (!projectId) {
         return (

@@ -45,7 +45,14 @@ const getProjectByIdHandler = async (req: Request, res: Response) => {
             return;
         }
 
-        res.json({ project });
+        // Parse JSON fields
+        const projectData = {
+            ...project,
+            erdData: project.erdData ? JSON.parse(project.erdData) : null,
+            canvasData: project.canvasData ? JSON.parse(project.canvasData) : null,
+        };
+
+        res.json({ project: projectData });
     } catch (error) {
         console.error("Error fetching project:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -130,12 +137,19 @@ const updateProjectHandler = async (req: Request, res: Response) => {
             },
             data: {
                 ...(name && { name }),
-                ...(erdData !== undefined && { erdData }),
-                ...(canvasData !== undefined && { canvasData }),
+                ...(erdData !== undefined && { erdData: JSON.stringify(erdData) }),
+                ...(canvasData !== undefined && { canvasData: JSON.stringify(canvasData) }),
             }
         });
 
-        res.json({ project: updatedProject });
+        // Parse JSON fields for response
+        const projectData = {
+            ...updatedProject,
+            erdData: updatedProject.erdData ? JSON.parse(updatedProject.erdData) : null,
+            canvasData: updatedProject.canvasData ? JSON.parse(updatedProject.canvasData) : null,
+        };
+
+        res.json({ project: projectData });
     } catch (error) {
         console.error("Error updating project:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -160,18 +174,26 @@ const saveMessagesHandler = async (req: Request, res: Response) => {
             return;
         }
 
-        // Delete old messages and insert new ones
-        await prisma.$executeRaw`DELETE FROM chat_message WHERE "projectId" = ${projectId}`;
+        // Transaction to ensure atomicity
+        await prisma.$transaction(async (tx) => {
+            // Delete old messages
+            await tx.chatMessage.deleteMany({
+                where: { projectId }
+            });
 
-        if (messages && messages.length > 0) {
-            const values = messages.map((msg: any) =>
-                `('${randomUUID()}', '${projectId}', '${msg.role}', '${msg.content.replace(/'/g, "''")}', '${new Date(msg.timestamp || Date.now()).toISOString()}')`
-            ).join(',');
-
-            await prisma.$executeRawUnsafe(
-                `INSERT INTO chat_message (id, "projectId", role, content, "createdAt") VALUES ${values}`
-            );
-        }
+            // Insert new messages
+            if (messages && messages.length > 0) {
+                await tx.chatMessage.createMany({
+                    data: messages.map((msg: any) => ({
+                        id: randomUUID(),
+                        projectId,
+                        role: msg.role,
+                        content: msg.content,
+                        createdAt: new Date(msg.timestamp || Date.now())
+                    }))
+                });
+            }
+        });
 
         res.json({ success: true });
     } catch (error) {
@@ -180,11 +202,118 @@ const saveMessagesHandler = async (req: Request, res: Response) => {
     }
 };
 
+import * as fs from 'fs';
+import * as path from 'path';
+
+// ... existing imports
+
+const getProjectCodeHandler = async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const { projectId } = req.params;
+
+    try {
+        const project = await prisma.project.findFirst({
+            where: {
+                id: projectId,
+                ownerId: user.id
+            }
+        });
+
+        if (!project) {
+            res.status(404).json({ error: "Project not found" });
+            return;
+        }
+
+        const boilerplatePath = path.join(process.cwd(), 'templates', 'boilerplate');
+
+        // Helper to recursively read directory
+        const readDir = (dirPath: string, relativePath: string = ''): any[] => {
+            if (!fs.existsSync(dirPath)) return [];
+
+            const items = fs.readdirSync(dirPath);
+            const nodes: any[] = [];
+
+            for (const item of items) {
+                const fullPath = path.join(dirPath, item);
+                const itemRelativePath = path.join(relativePath, item);
+                const stat = fs.statSync(fullPath);
+
+                if (stat.isDirectory()) {
+                    if (item === 'node_modules' || item === '.git') continue;
+
+                    nodes.push({
+                        id: itemRelativePath,
+                        name: item,
+                        type: 'folder',
+                        children: readDir(fullPath, itemRelativePath)
+                    });
+                } else {
+                    let content = '';
+                    try {
+                        // Inject generated schema if it's the schema file
+                        if (item === 'schema.prisma' && relativePath.includes('prisma')) {
+                            content = project.prismaSchema || fs.readFileSync(fullPath, 'utf-8');
+                        } else {
+                            // Only read text files, skip binaries/images for now to save bandwidth
+                            // or limit size
+                            if (stat.size < 100000) { // < 100KB
+                                content = fs.readFileSync(fullPath, 'utf-8');
+                            } else {
+                                content = "// File too large to display";
+                            }
+                        }
+                    } catch (e) {
+                        content = "// Error reading file";
+                    }
+
+                    nodes.push({
+                        id: itemRelativePath,
+                        name: item,
+                        type: 'file',
+                        language: getLanguageFromExt(item),
+                        content
+                    });
+                }
+            }
+
+            // Sort folders first, then files
+            return nodes.sort((a, b) => {
+                if (a.type === b.type) return a.name.localeCompare(b.name);
+                return a.type === 'folder' ? -1 : 1;
+            });
+        };
+
+        const files = readDir(boilerplatePath);
+        res.json({ files });
+
+    } catch (error) {
+        console.error("Error fetching project code:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+function getLanguageFromExt(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+    switch (ext) {
+        case '.ts': return 'typescript';
+        case '.tsx': return 'typescript';
+        case '.js': return 'javascript';
+        case '.jsx': return 'javascript';
+        case '.json': return 'json';
+        case '.css': return 'css';
+        case '.html': return 'html';
+        case '.prisma': return 'prisma';
+        case '.md': return 'markdown';
+        default: return 'plaintext';
+    }
+}
+
 export {
     getAllProjectsHandler,
     getProjectByIdHandler,
     newProjectHandler,
     deleteProjectHandler,
     updateProjectHandler,
-    saveMessagesHandler
+    saveMessagesHandler,
+    getProjectCodeHandler
 };

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useWorkspace } from "@/contexts/workspace-context"
+import { ShimmeringText } from "@/components/ui/shadcn-io/shimmering-text"
 
 interface Message {
     id: string
@@ -19,7 +20,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ projectId }: ChatPanelProps) {
-    const { setErdData } = useWorkspace()
+    const { setErdData, setCanvasNodes, setCanvasEdges } = useWorkspace()
     const [messages, setMessages] = React.useState<Message[]>([
         {
             id: "1",
@@ -66,7 +67,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
     // Save messages when they change (debounced)
     React.useEffect(() => {
         const timer = setTimeout(async () => {
-            if (messages.length > 1 && !isLoadingMessages) { // Skip if only welcome message
+            if (!isLoadingMessages) {
                 try {
                     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
                     await fetch(`${backendUrl}/project/${projectId}/messages`, {
@@ -160,8 +161,15 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
             // Parse Mermaid and emit to canvas
             try {
                 const { parseMermaidERD } = await import("@/lib/mermaid-parser")
+                const { convertERDToFlow } = await import("@/lib/erd-to-flow")
+
                 const erdData = parseMermaidERD(accumulatedContent)
                 setErdData(erdData)
+
+                // Convert to nodes/edges and update context
+                const { nodes, edges } = convertERDToFlow(erdData)
+                setCanvasNodes(nodes)
+                setCanvasEdges(edges)
             } catch (parseError) {
                 console.error("Failed to parse ERD:", parseError)
             }
@@ -239,8 +247,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                             <Bot className="h-4 w-4" />
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Thinking...
+                            <ShimmeringText text="Thinking..." className="text-sm font-medium" />
                         </div>
                     </div>
                 )}

@@ -47,21 +47,21 @@ export function Header() {
     return (
         <>
             {/* Left bubble - Brand & Workspace Selector */}
-            <header className="fixed top-3 left-6 z-50 flex items-center gap-x-2 px-3 py-2 backdrop-blur-sm rounded-full border border-[#333] bg-[#1f1f1f57]">
+            <header className="fixed top-3 left-6 z-50 flex items-center gap-x-2 px-3 py-2 backdrop-blur-sm rounded-full border border-gray-200 dark:border-[#333] bg-white/50 dark:bg-[#1f1f1f57]">
                 <div className="flex items-center gap-x-3">
                     <div className="relative w-4 h-4 flex items-center justify-center">
-                        <span className="absolute w-1 h-1 rounded-full bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
-                        <span className="absolute w-1 h-1 rounded-full bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-                        <span className="absolute w-1 h-1 rounded-full bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-                        <span className="absolute w-1 h-1 rounded-full bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
+                        <span className="absolute w-1 h-1 rounded-full bg-black dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
+                        <span className="absolute w-1 h-1 rounded-full bg-black dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
+                        <span className="absolute w-1 h-1 rounded-full bg-black dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
+                        <span className="absolute w-1 h-1 rounded-full bg-black dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
                     </div>
-                    <span className="text-base text-white/90 dark:text-white/90 font-medium">AbleLove</span>
+                    <span className="text-base text-black dark:text-white/90 font-medium">AbleLove</span>
                 </div>
                 {showWorkspaceSelector && <WorkspaceSelector />}
             </header>
 
             {/* Right bubble - Actions */}
-            <header className="fixed top-3 right-6 z-50 flex items-center gap-1.5 px-3 py-2 backdrop-blur-sm rounded-full border border-[#333] bg-[#1f1f1f57]">
+            <header className="fixed top-3 right-6 z-50 flex items-center gap-1.5 px-3 py-2 backdrop-blur-sm rounded-full border border-gray-200 dark:border-[#333] bg-white/50 dark:bg-[#1f1f1f57]">
                 <Button
                     variant="ghost"
                     size="icon"

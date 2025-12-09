@@ -87,12 +87,15 @@ export function WorkspaceSelector() {
                 const updatedProjects = projects.filter(p => p.id !== projectId)
                 setProjects(updatedProjects)
 
-                // If deleted current project, switch to first available or redirect
+                // If deleted current project
                 if (currentProject?.id === projectId) {
                     if (updatedProjects.length > 0) {
+                        // Switch to first available
+                        setCurrentProject(updatedProjects[0])
                         router.push(`${pathname}?projectId=${updatedProjects[0].id}`)
                     } else {
-                        router.push("/")
+                        // No projects left, create a new one automatically
+                        await handleNewProject()
                     }
                 }
             }

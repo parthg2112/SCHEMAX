@@ -1,14 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { ReactFlow, Background, Controls, MiniMap, useNodesState, useEdgesState, Panel, Connection, addEdge } from '@xyflow/react'
+import { ReactFlow, Background, Controls, MiniMap, Panel, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Button } from "@/components/ui/button"
 import { Loader2, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { ERDEntityNode } from "@/components/nodes/ERDEntityNode"
-import { convertERDToFlow } from "@/lib/erd-to-flow"
+
 
 interface CanvasPanelProps {
     projectId: string
@@ -20,46 +20,27 @@ const nodeTypes = {
 
 export function CanvasPanel({ projectId }: CanvasPanelProps) {
     const { erdData, canvasNodes, setCanvasNodes, canvasEdges, setCanvasEdges, addEntity } = useWorkspace()
-    const [nodes, setNodes, onNodesChange] = useNodesState(canvasNodes)
-    const [edges, setEdges, onEdgesChange] = useEdgesState(canvasEdges)
     const [isGenerating, setIsGenerating] = React.useState(false)
     const router = useRouter()
 
-    // Sync with workspace context
-    React.useEffect(() => {
-        setNodes(canvasNodes)
-    }, [canvasNodes, setNodes])
+    const onNodesChange = React.useCallback(
+        (changes: NodeChange[]) => setCanvasNodes(applyNodeChanges(changes, canvasNodes)),
+        [canvasNodes, setCanvasNodes]
+    )
 
-    React.useEffect(() => {
-        setEdges(canvasEdges)
-    }, [canvasEdges, setEdges])
-
-    // Update context when local state changes
-    React.useEffect(() => {
-        setCanvasNodes(nodes)
-    }, [nodes, setCanvasNodes])
-
-    React.useEffect(() => {
-        setCanvasEdges(edges)
-    }, [edges, setCanvasEdges])
-
-    // Update nodes when ERD data changes
-    React.useEffect(() => {
-        if (erdData) {
-            const flowData = convertERDToFlow(erdData)
-            setNodes(flowData.nodes)
-            setEdges(flowData.edges)
-        }
-    }, [erdData, setNodes, setEdges])
+    const onEdgesChange = React.useCallback(
+        (changes: EdgeChange[]) => setCanvasEdges(applyEdgeChanges(changes, canvasEdges)),
+        [canvasEdges, setCanvasEdges]
+    )
 
     const onConnect = React.useCallback(
-        (params: Connection) => setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: false }, eds)),
-        [setEdges]
+        (params: Connection) => setCanvasEdges(addEdge({ ...params, type: 'smoothstep', animated: false }, canvasEdges)),
+        [canvasEdges, setCanvasEdges]
     )
 
     const handleAddEntity = () => {
         const newEntity = {
-            name: `Entity_${nodes.length + 1}`,
+            name: `Entity_${canvasNodes.length + 1}`,
             attributes: [
                 { name: 'id', type: 'int', key: 'PK' as const }
             ]
@@ -68,12 +49,12 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
     }
 
     const handleGenerate = async () => {
-        if (isGenerating || nodes.length === 0) return
+        if (isGenerating || canvasNodes.length === 0) return
         setIsGenerating(true)
 
         try {
             // Convert nodes back to ERD structure
-            const entities = nodes.map(node => ({
+            const entities = canvasNodes.map(node => ({
                 name: node.data.label,
                 attributes: node.data.attributes
             }))
@@ -112,8 +93,8 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
     return (
         <div className="h-full w-full bg-background">
             <ReactFlow
-                nodes={nodes}
-                edges={edges}
+                nodes={canvasNodes}
+                edges={canvasEdges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
@@ -134,7 +115,7 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                         onClick={handleAddEntity}
                         variant="default"
                         size="sm"
-                        className="shadow-lg bg-white text-gray-900 hover:bg-gray-100 border border-gray-300"
+                        className="shadow-lg bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 border border-transparent dark:border-gray-300"
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Add Entity
@@ -143,8 +124,8 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                 <Panel position="top-right" className="m-4">
                     <Button
                         onClick={handleGenerate}
-                        disabled={isGenerating || nodes.length === 0}
-                        className="shadow-lg bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 disabled:opacity-50"
+                        disabled={isGenerating || canvasNodes.length === 0}
+                        className="shadow-lg bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 border border-transparent dark:border-gray-300 disabled:opacity-50"
                     >
                         {isGenerating ? (
                             <>

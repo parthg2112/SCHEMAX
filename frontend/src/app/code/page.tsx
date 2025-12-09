@@ -40,43 +40,38 @@ function CodePageContent() {
             return
         }
 
-        const fetchProject = async () => {
+        const fetchProjectCode = async () => {
             try {
                 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
-                const res = await fetch(`${backendUrl}/project/${projectId}`)
+                const res = await fetch(`${backendUrl}/project/${projectId}/code`, {
+                    credentials: 'include',
+                })
 
-                if (!res.ok) throw new Error("Failed to fetch project")
+                if (!res.ok) throw new Error("Failed to fetch project code")
 
                 const data = await res.json()
-                const project = data.project
+                setFiles(data.files || [])
 
-                if (!project) throw new Error("Project not found")
-
-                // Construct file structure
-                const prismaSchema = project.prismaSchema || "// No schema generated yet"
-
-                const generatedFiles: FileNode[] = [
-                    {
-                        id: "root",
-                        name: "prisma",
-                        type: "folder",
-                        children: [
-                            {
-                                id: "schema",
-                                name: "schema.prisma",
-                                type: "file",
-                                language: "prisma",
-                                content: prismaSchema
-                            }
-                        ]
+                // Try to find schema.prisma to select by default, otherwise select first file
+                // Helper to find file recursively
+                const findSchema = (nodes: FileNode[]): FileNode | null => {
+                    for (const node of nodes) {
+                        if (node.name === 'schema.prisma') return node;
+                        if (node.children) {
+                            const found = findSchema(node.children);
+                            if (found) return found;
+                        }
                     }
-                ]
-
-                setFiles(generatedFiles)
-                // Select schema.prisma by default
-                if (generatedFiles[0].children) {
-                    setSelectedFile(generatedFiles[0].children[0])
+                    return null;
                 }
+
+                const schemaNode = findSchema(data.files);
+                if (schemaNode) {
+                    setSelectedFile(schemaNode);
+                } else if (data.files.length > 0) {
+                    setSelectedFile(data.files[0]);
+                }
+
             } catch (err) {
                 console.error(err)
                 setError("Failed to load project code")
@@ -85,7 +80,7 @@ function CodePageContent() {
             }
         }
 
-        fetchProject()
+        fetchProjectCode()
     }, [projectId])
 
     const handleDownload = () => {

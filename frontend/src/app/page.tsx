@@ -435,7 +435,7 @@ export default function LoginPage() {
             <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
             <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
           </div>
-          <span className="text-2xl text-gray-100">AbleLove</span>
+          <span className="text-2xl text-gray-100">SCHEMAX</span>
         </div>
       </header>
 

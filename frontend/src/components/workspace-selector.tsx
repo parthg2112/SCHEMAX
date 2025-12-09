@@ -177,7 +177,7 @@ export function WorkspaceSelector() {
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="ghost"
-                    className="gap-2 text-white/70 dark:text-white/70 hover:text-white/90 dark:hover:text-white/90 h-auto px-3 py-1 rounded-full hover:bg-white/5"
+                    className="gap-2 text-muted-foreground hover:text-foreground h-auto px-3 py-1 rounded-full"
                 >
                     <span className="text-sm">{currentProject?.name || "Select Workspace"}</span>
                     <ChevronDown className="h-3.5 w-3.5" />

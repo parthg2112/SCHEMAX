@@ -47,7 +47,7 @@ function WorkspacePageContent() {
 
     return (
         <WorkspaceProvider>
-            <div className="h-screen w-full pt-16 pb-4 px-4 flex flex-col">
+            <div className="h-screen w-full pb-4 px-4 flex flex-col">
                 <div className="flex-1 rounded-xl border bg-background shadow-sm overflow-hidden">
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>

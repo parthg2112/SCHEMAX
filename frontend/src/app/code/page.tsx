@@ -132,6 +132,7 @@ function CodePageContent() {
                                 <CodeViewer
                                     code={selectedFile.content}
                                     language={selectedFile.language || "plaintext"}
+                                    filename={selectedFile.name}
                                 />
                             ) : (
                                 <div className="h-full w-full flex items-center justify-center text-muted-foreground">

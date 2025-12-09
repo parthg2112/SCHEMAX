@@ -1,40 +1,32 @@
 "use client";
 import React from "react";
 import { CanvasRevealEffect } from "@/components/blocks/sign-in-flow-1";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
-export const CanvasLoader = () => {
+export function CanvasLoader() {
     return (
-        <div className="h-screen w-full relative flex items-center justify-center bg-black overflow-hidden">
-            <div className="absolute inset-0 w-full h-full">
+        <div className="h-screen w-full bg-black relative flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0">
                 <CanvasRevealEffect
-                    animationSpeed={3}
+                    animationSpeed={4}
                     containerClassName="bg-black"
-                    colors={[
-                        [236, 72, 153],
-                        [232, 121, 249],
-                    ]}
-                    dotSize={2}
+                    colors={[[255, 255, 255], [255, 255, 255]]}
+                    dotSize={6}
+                    reverse={true}
                 />
             </div>
-            <div className="z-20 flex flex-col items-center justify-center gap-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="text-4xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-500"
-                >
-                    AbleLove
-                </motion.div>
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-sm text-neutral-400"
-                >
-                    Loading your workspace...
-                </motion.div>
-            </div>
+
+            <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative z-10"
+            >
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-white to-white/70 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 text-black animate-spin" />
+                </div>
+            </motion.div>
         </div>
-    );
+    )
 };

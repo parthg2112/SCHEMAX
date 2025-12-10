@@ -67,7 +67,7 @@ export function WorkspaceSelector() {
     const handleProjectSwitch = (project: Project) => {
         if (editingId) return // Don't switch if editing
         setCurrentProject(project)
-        router.push(`${pathname}?projectId=${project.id}`)
+        router.push(`/workspace?p=${project.id}`)
     }
 
     const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
@@ -92,7 +92,7 @@ export function WorkspaceSelector() {
                     if (updatedProjects.length > 0) {
                         // Switch to first available
                         setCurrentProject(updatedProjects[0])
-                        router.push(`${pathname}?projectId=${updatedProjects[0].id}`)
+                        router.push(`/workspace?p=${updatedProjects[0].id}`)
                     } else {
                         // No projects left, create a new one automatically
                         await handleNewProject()

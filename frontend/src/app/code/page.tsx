@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Download, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
     ResizableHandle,
     ResizablePanel,
@@ -104,12 +105,24 @@ function CodePageContent() {
     }
 
     return (
-        <div className="h-screen w-full pt-16 pb-4 px-4 flex flex-col">
+        <div className="h-full w-full pb-4 px-4 flex flex-col">
             <div className="flex-1 rounded-xl border bg-background shadow-sm overflow-hidden flex flex-col">
                 {/* Toolbar */}
                 <div className="h-12 border-b flex items-center justify-between px-4 bg-muted/20">
-                    <div className="text-sm font-medium">
-                        {selectedFile ? selectedFile.name : "No file selected"}
+                    <div className="flex items-center gap-4">
+                        <Link href={`/workspace?projectId=${projectId}`} prefetch={true}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                ← Back to Workspace
+                            </Button>
+                        </Link>
+                        <div className="h-4 w-px bg-border" />
+                        <div className="text-sm font-medium">
+                            {selectedFile ? selectedFile.name : "No file selected"}
+                        </div>
                     </div>
                     <Button size="sm" onClick={handleDownload} className="gap-2">
                         <Download className="h-4 w-4" />

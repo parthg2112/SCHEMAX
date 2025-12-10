@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
-import { Moon, Sun, LogOut, ChevronDown, Menu } from "lucide-react"
+import { Moon, Sun, LogOut, ChevronDown, Menu, Crown } from "lucide-react"
 import { WorkspaceSelector } from "@/components/workspace-selector"
 import {
     DropdownMenu,
@@ -22,6 +22,8 @@ import {
     SheetContent,
     SheetTrigger,
 } from "@/components/ui/sheet"
+import { PricingModal } from "@/components/pricing-modal"
+import { ShimmerButton } from "@/components/ui/shimmer-button"
 
 // User Menu Component
 const UserMenu = ({
@@ -70,10 +72,19 @@ export function Header() {
     const [isAuthenticated, setIsAuthenticated] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(true)
     const [user, setUser] = React.useState<{ name: string; email: string; image?: string } | null>(null)
+    const [pricingOpen, setPricingOpen] = React.useState(false)
+    const [userPlan, setUserPlan] = React.useState<'free' | 'pro'>('free')
     const router = useRouter()
     const pathname = usePathname()
     const { theme, setTheme } = useTheme()
     const [isMobile, setIsMobile] = React.useState(false)
+
+    // Listen for pricing modal open event from chat panel
+    React.useEffect(() => {
+        const handleOpenPricing = () => setPricingOpen(true)
+        window.addEventListener('openPricing' as any, handleOpenPricing)
+        return () => window.removeEventListener('openPricing' as any, handleOpenPricing)
+    }, [])
 
     // Check auth status on mount
     React.useEffect(() => {
@@ -126,7 +137,7 @@ export function Header() {
     const showWorkspaceSelector = pathname === "/workspace" || pathname === "/code"
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
+        <header className="z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
             <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-2">
                 {/* Left side */}
                 <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -185,6 +196,19 @@ export function Header() {
 
                 {/* Right side */}
                 <div className="flex items-center gap-2 shrink-0">
+                    {/* GET PRO Button */}
+                    {isAuthenticated && userPlan === 'free' && (
+                        <ShimmerButton
+                            className="shadow-2xl"
+                            onClick={() => setPricingOpen(true)}
+                        >
+                            <Crown className="h-4 w-4 mr-1.5" />
+                            <span className="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white dark:from-white dark:to-slate-900/10 lg:text-base">
+                                GET PRO
+                            </span>
+                        </ShimmerButton>
+                    )}
+
                     <Button
                         variant="ghost"
                         size="icon"
@@ -206,6 +230,20 @@ export function Header() {
                     )}
                 </div>
             </div>
+
+            {/* Pricing Modal */}
+            <PricingModal
+                open={pricingOpen}
+                onOpenChange={setPricingOpen}
+                currentPlan={userPlan}
+                onSelectPlan={(plan) => {
+                    if (plan === 'pro') {
+                        // TODO: Trigger payment flow
+                        console.log('Upgrade to Pro - will integrate Cashfree')
+                    }
+                    setPricingOpen(false)
+                }}
+            />
         </header>
     )
 }

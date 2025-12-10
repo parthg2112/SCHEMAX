@@ -1,13 +1,36 @@
 "use client"
 
 import * as React from "react"
-import { ReactFlow, Background, Controls, MiniMap, Panel, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from '@xyflow/react'
+import { ReactFlow, Background, Controls, MiniMap, Panel, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, Edge } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Button } from "@/components/ui/button"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2, Plus, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { ERDEntityNode } from "@/components/nodes/ERDEntityNode"
+import CustomEdge from "@/components/edges/CustomEdge"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 
 interface CanvasPanelProps {
@@ -15,7 +38,11 @@ interface CanvasPanelProps {
 }
 
 const nodeTypes = {
-    erdEntity: ERDEntityNode as any, // Type assertion to fix React Flow node type strictness
+    erdEntity: ERDEntityNode as any,
+}
+
+const edgeTypes = {
+    custom: CustomEdge,
 }
 
 export function CanvasPanel({ projectId }: CanvasPanelProps) {
@@ -28,11 +55,42 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
         addEntity,
         currentHash,
         lastGeneratedHash,
-        setLastGeneratedHash
+        setLastGeneratedHash,
+        undo,
+        redo,
+        addToHistory,
+        updateEdge
     } = useWorkspace()
     const [isGenerating, setIsGenerating] = React.useState(false)
     const [ormType, setOrmType] = React.useState<"prisma" | "drizzle" | "sql">("prisma")
     const router = useRouter()
+
+    // Edge Editing State
+    const [editingEdge, setEditingEdge] = React.useState<Edge | null>(null)
+    const [edgeLabel, setEdgeLabel] = React.useState("")
+    const [cardinalitySource, setCardinalitySource] = React.useState("")
+    const [cardinalityTarget, setCardinalityTarget] = React.useState("")
+
+    // Keyboard Shortcuts for Undo/Redo
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+                if (e.shiftKey) {
+                    e.preventDefault()
+                    redo()
+                } else {
+                    e.preventDefault()
+                    undo()
+                }
+            } else if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+                e.preventDefault()
+                redo()
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [undo, redo])
 
     const onNodesChange = React.useCallback(
         (changes: NodeChange[]) => setCanvasNodes(applyNodeChanges(changes, canvasNodes)),
@@ -45,9 +103,35 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
     )
 
     const onConnect = React.useCallback(
-        (params: Connection) => setCanvasEdges(addEdge({ ...params, type: 'smoothstep', animated: false }, canvasEdges)),
-        [canvasEdges, setCanvasEdges]
+        (params: Connection) => {
+            addToHistory()
+            setCanvasEdges(addEdge({ ...params, type: 'custom', animated: false }, canvasEdges))
+        },
+        [canvasEdges, setCanvasEdges, addToHistory]
     )
+
+    const onNodeDragStart = React.useCallback(() => {
+        addToHistory()
+    }, [addToHistory])
+
+    const onEdgeClick = React.useCallback((event: React.MouseEvent, edge: Edge) => {
+        event.stopPropagation()
+        setEditingEdge(edge)
+        setEdgeLabel((edge.data?.label as string) || "")
+        setCardinalitySource((edge.data?.cardinalitySource as string) || "")
+        setCardinalityTarget((edge.data?.cardinalityTarget as string) || "")
+    }, [])
+
+    const handleSaveEdge = () => {
+        if (editingEdge) {
+            updateEdge(editingEdge.id, {
+                label: edgeLabel,
+                cardinalitySource,
+                cardinalityTarget
+            })
+            setEditingEdge(null)
+        }
+    }
 
     const handleAddEntity = () => {
         const newEntity = {
@@ -121,7 +205,10 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onNodeDragStart={onNodeDragStart}
+                onEdgeClick={onEdgeClick}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 fitView
                 className="bg-gray-50 dark:bg-gray-900"
                 style={{
@@ -162,36 +249,88 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                                 "Generate Schema"
                             )}
                         </Button>
-                        <div className="relative group">
-                            <Button
-                                className="rounded-none rounded-r-md bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 px-2"
-                                disabled={isGenerating}
-                            >
-                                <span className="sr-only">Select ORM</span>
-                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-3 h-3">
-                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </Button>
-                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 hidden group-hover:block z-50">
-                                <div className="py-1">
-                                    {["prisma", "drizzle", "sql"].map((type) => (
-                                        <button
-                                            key={type}
-                                            onClick={() => setOrmType(type as any)}
-                                            className={`block w-full text-left px-4 py-2 text-sm ${ormType === type
-                                                    ? "bg-gray-100 dark:bg-gray-700 text-black dark:text-white font-medium"
-                                                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                                }`}
-                                        >
-                                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    className="rounded-none rounded-r-md bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 px-2"
+                                    disabled={isGenerating}
+                                >
+                                    <span className="sr-only">Select ORM</span>
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {["prisma", "drizzle", "sql"].map((type) => (
+                                    <DropdownMenuItem
+                                        key={type}
+                                        onClick={() => setOrmType(type as any)}
+                                        className={ormType === type ? "bg-accent" : ""}
+                                    >
+                                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </Panel>
             </ReactFlow>
+
+            <Dialog open={!!editingEdge} onOpenChange={(open) => !open && setEditingEdge(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Relationship</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">
+                                Name
+                            </Label>
+                            <Input
+                                id="name"
+                                value={edgeLabel}
+                                onChange={(e) => setEdgeLabel(e.target.value)}
+                                className="col-span-3"
+                                placeholder="e.g. has, belongs to"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="source" className="text-right">
+                                Source
+                            </Label>
+                            <Select value={cardinalitySource} onValueChange={setCardinalitySource}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select cardinality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1</SelectItem>
+                                    <SelectItem value="0..1">0..1</SelectItem>
+                                    <SelectItem value="1..n">1..n</SelectItem>
+                                    <SelectItem value="0..n">0..n</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="target" className="text-right">
+                                Target
+                            </Label>
+                            <Select value={cardinalityTarget} onValueChange={setCardinalityTarget}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select cardinality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1</SelectItem>
+                                    <SelectItem value="0..1">0..1</SelectItem>
+                                    <SelectItem value="1..n">1..n</SelectItem>
+                                    <SelectItem value="0..n">0..n</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleSaveEdge}>Save changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

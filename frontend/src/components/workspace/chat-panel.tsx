@@ -34,7 +34,16 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
     const [streamedContent, setStreamedContent] = React.useState("")
     const [isLoadingMessages, setIsLoadingMessages] = React.useState(true)
 
-    // Load messages on mount
+    // Rate limit tracking
+    const [messageUsage, setMessageUsage] = React.useState<{
+        used: number
+        limit: number
+        remaining: number
+        tier: 'free' | 'pro'
+    } | null>(null)
+    const [isLimitExceeded, setIsLimitExceeded] = React.useState(false)
+
+    // Load messages and usage on mount
     React.useEffect(() => {
         const loadMessages = async () => {
             try {
@@ -61,6 +70,16 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                 setIsLoadingMessages(false)
             }
         }
+
+        // Reset to default state before loading new project data
+        const defaultMessage: Message = {
+            id: "1",
+            role: "assistant",
+            content: "Hello! Describe your database requirements, and I'll generate a Mermaid ERD for you.",
+            timestamp: new Date(),
+        }
+        setMessages([defaultMessage])
+
         loadMessages()
     }, [projectId])
 
@@ -112,7 +131,31 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
             })
 
             if (!response.ok) {
+                // Check if it's a rate limit error
+                if (response.status === 429) {
+                    const errorData = await response.json()
+                    setIsLimitExceeded(true)
+                    setMessageUsage({
+                        used: errorData.used || 0,
+                        limit: errorData.limit || 10,
+                        remaining: 0,
+                        tier: errorData.tier || 'free'
+                    })
+                    throw new Error(errorData.error || "Daily message limit exceeded")
+                }
                 throw new Error("Failed to generate ERD")
+            }
+
+            // Extract usage info from response headers or body
+            const usageHeader = response.headers.get('X-Message-Usage')
+            if (usageHeader) {
+                try {
+                    const usage = JSON.parse(usageHeader)
+                    setMessageUsage(usage)
+                    setIsLimitExceeded(usage.remaining <= 0)
+                } catch (e) {
+                    console.error('Failed to parse usage header:', e)
+                }
             }
 
             if (!response.body) return
@@ -136,6 +179,11 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                             if (jsonStr === '[DONE]') continue
 
                             const data = JSON.parse(jsonStr)
+
+                            if (data.type === 'error') {
+                                throw new Error(data.error)
+                            }
+
                             if (data.type === 'text-delta' && data.delta) {
                                 accumulatedContent += data.delta
                                 setStreamedContent((prev) => prev + data.delta)
@@ -252,25 +300,65 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                     </div>
                 )}
             </div>
+
+            {/* Message Usage Counter */}
+            {messageUsage && (
+                <div className="px-4 py-2 border-t bg-muted/30">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                            Messages: <span className="font-medium text-foreground">{messageUsage.used}/{messageUsage.limit}</span>
+                        </span>
+                        <span className={`font-medium ${messageUsage.remaining <= 2 ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                            {messageUsage.remaining} remaining
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {/* Limit Exceeded Warning */}
+            {isLimitExceeded && messageUsage && (
+                <div className="px-4 py-3 bg-orange-50 dark:bg-orange-950/20 border-t border-orange-200 dark:border-orange-900">
+                    <div className="text-sm">
+                        <p className="font-medium text-orange-900 dark:text-orange-200 mb-1">
+                            🚫 Daily limit reached
+                        </p>
+                        <p className="text-orange-700 dark:text-orange-300 text-xs mb-2">
+                            You've used all {messageUsage.limit} messages for today. Upgrade to Pro for 100+ messages/day!
+                        </p>
+                        <Button
+                            size="sm"
+                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                            onClick={() => window.dispatchEvent(new CustomEvent('openPricing'))}
+                        >
+                            Upgrade to Pro
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <div className="border-t p-4">
                 <form
                     className="flex gap-2"
                     onSubmit={handleSubmit}
                 >
                     <Input
-                        placeholder="Describe your database..."
+                        placeholder={isLimitExceeded ? "Daily limit reached - upgrade to continue" : "Describe your database..."}
                         className="flex-1 backdrop-blur-sm rounded-full border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[#1f1f1f57] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 focus-visible:ring-1 focus-visible:ring-gray-400 dark:focus-visible:ring-white/30"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        disabled={isLoading}
+                        disabled={isLoading || isLimitExceeded}
                     />
                     <Button
                         type="submit"
                         size="icon"
-                        disabled={isLoading}
+                        disabled={isLoading || !input.trim() || isLimitExceeded}
                         className="rounded-full h-10 w-10 backdrop-blur-sm border border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[#1f1f1f57] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white"
                     >
-                        <Send className="h-4 w-4" />
+                        {isLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Send className="h-4 w-4" />
+                        )}
                         <span className="sr-only">Send</span>
                     </Button>
                 </form>

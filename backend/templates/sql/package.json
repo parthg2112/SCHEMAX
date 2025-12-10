@@ -1,0 +1,33 @@
+{
+    "name": "SCHEMAX-sql-template",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite dev --port 3000",
+        "build": "vite build",
+        "serve": "vite preview",
+        "db:init": "node scripts/init-db.js",
+        "db:migrate": "node scripts/migrate.js"
+    },
+    "dependencies": {
+        "pg": "^8.13.1",
+        "@tailwindcss/vite": "^4.0.6",
+        "@tanstack/react-router": "^1.132.0",
+        "@tanstack/react-start": "^1.132.0",
+        "lucide-react": "^0.544.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "tailwindcss": "^4.0.6",
+        "vite-tsconfig-paths": "^5.1.4"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "@types/pg": "^8.11.10",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^5.0.4",
+        "dotenv": "^16.4.7",
+        "typescript": "^5.7.2",
+        "vite": "^7.1.7"
+    }
+}

@@ -4,8 +4,8 @@ import * as React from 'react';
 import { useInView, type UseInViewOptions } from 'motion/react';
 import { useTheme } from 'next-themes';
 
-import { cn } from '@repo/shadcn-ui/lib/utils';
-import { Button } from '@repo/shadcn-ui/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-react';
 
 type CopyButtonProps = {
@@ -211,7 +211,7 @@ function CodeEditor({
               className={cn(
                 'flex flex-row items-center gap-2',
                 dots &&
-                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
+                'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
               )}
             >
               {icon ? (
@@ -259,8 +259,8 @@ function CodeEditor({
           className={cn(
             '[&>pre,_&_code]:!bg-transparent [&>pre,_&_code]:[background:transparent_!important] [&>pre,_&_code]:border-none [&_code]:!text-[13px]',
             cursor &&
-              !isDone &&
-              "[&_.line:last-of-type::after]:content-['|'] [&_.line:last-of-type::after]:animate-pulse [&_.line:last-of-type::after]:inline-block [&_.line:last-of-type::after]:w-[1ch] [&_.line:last-of-type::after]:-translate-px",
+            !isDone &&
+            "[&_.line:last-of-type::after]:content-['|'] [&_.line:last-of-type::after]:animate-pulse [&_.line:last-of-type::after]:inline-block [&_.line:last-of-type::after]:w-[1ch] [&_.line:last-of-type::after]:-translate-px",
           )}
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
         />

@@ -36,7 +36,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} flex flex-col h-screen overflow-hidden`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -44,7 +44,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Header />
-          {children}
+          <main className="flex-1 overflow-hidden relative">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>

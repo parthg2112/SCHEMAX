@@ -6,6 +6,7 @@ import { auth } from "./lib/auth";
 import erdGenRouter from "./router/erd-gen";
 import prismaGenRouter from "./router/prisma-gen";
 import projectRouter from "./router/project";
+import paymentRouter from "./router/payment";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ const port = process.env.PORT || 3001;
 app.use("/erd", erdGenRouter);
 app.use("/prisma", prismaGenRouter);
 app.use("/project", projectRouter);
+app.use("/payment", paymentRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

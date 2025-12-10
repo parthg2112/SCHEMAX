@@ -79,7 +79,7 @@ ${prompt}
     }
 
     const result = streamText({
-        model: googleAi("gemini-2.5-flash"),
+        model: googleAi("gemini-2.0-flash"),
         messages: [
             ...history,
             {

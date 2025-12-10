@@ -255,14 +255,14 @@ const getProjectCodeHandler = async (req: Request, res: Response) => {
                         let isSchemaFile = false;
                         if (ormType === 'prisma' && item === 'schema.prisma' && relativePath.includes('prisma')) {
                             isSchemaFile = true;
-                        } else if (ormType === 'drizzle' && item === 'schema.ts' && relativePath.includes('db')) {
+                        } else if (ormType === 'drizzle' && item === 'schema.ts' && (relativePath.includes('db') || relativePath.includes('src/db'))) {
                             isSchemaFile = true;
-                        } else if (ormType === 'sql' && item === 'init.sql') {
+                        } else if (ormType === 'sql' && item === 'init.sql' && relativePath.includes('db')) {
                             isSchemaFile = true;
                         }
 
-                        if (isSchemaFile) {
-                            content = project.prismaSchema || fs.readFileSync(fullPath, 'utf-8');
+                        if (isSchemaFile && project.prismaSchema) {
+                            content = project.prismaSchema;
                         } else {
                             // Only read text files, skip binaries/images for now to save bandwidth
                             // or limit size

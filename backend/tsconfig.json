@@ -4,6 +4,14 @@
         "moduleResolution": "node",
         "target": "ES2023",
         "strict": true,
+        "skipLibCheck": true,
         "esModuleInterop": true,
-    }
+        "outDir": "./dist",
+        "rootDir": "."
+    },
+    "exclude": [
+        "node_modules",
+        "templates",
+        "test-*.ts"
+    ]
 }

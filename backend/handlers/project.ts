@@ -175,7 +175,7 @@ const saveMessagesHandler = async (req: Request, res: Response) => {
         }
 
         // Transaction to ensure atomicity
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             // Delete old messages
             await tx.chatMessage.deleteMany({
                 where: { projectId }

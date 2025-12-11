@@ -21,6 +21,7 @@ COPY . .
 
 # Build backend
 WORKDIR /app/backend
+RUN npx prisma generate
 RUN pnpm run build
 
 # Expose port

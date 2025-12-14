@@ -13,10 +13,10 @@ RUN npm ci
 COPY . .
 
 WORKDIR /app/backend
-RUN npx prisma generate
+RUN npm run prisma:generate
 RUN npm run build
 RUN cp -r generated dist/
 
-EXPOSE 3001
+EXPOSE 80
 
 CMD ["node", "dist/index.js"]

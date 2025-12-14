@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/db.js';
 
 // Rate limit constants
-const FREE_TIER_DAILY_LIMIT = 10;
-const PRO_TIER_DAILY_LIMIT = 100;
+const FREE_TIER_DAILY_LIMIT = 5;
+const PRO_TIER_DAILY_LIMIT = 20;
 
 export const rateLimitMiddleware = async (
     req: Request & { user?: { id: string } },

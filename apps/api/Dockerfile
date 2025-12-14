@@ -17,10 +17,10 @@ COPY . .
 
 # Build the API
 WORKDIR /app/apps/api
+RUN npm run prisma:generate
 RUN corepack enable pnpm && pnpm run build
 
-ENV NODE_ENV production
-ENV PORT 80
+ENV NODE_ENV=production
 
 EXPOSE 80
 

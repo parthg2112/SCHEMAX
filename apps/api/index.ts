@@ -1,5 +1,5 @@
 import express from "express";
-
+import cors from "cors";
 import dotenv from "dotenv";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
@@ -11,6 +11,14 @@ import paymentRouter from "./router/payment.js";
 dotenv.config();
 
 const app = express();
+
+// CORS configuration - allow requests from frontend
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://localhost:3060'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Mount Better Auth handler BEFORE express.json()
 app.all("/api/auth/*splat", toNodeHandler(auth));

@@ -60,11 +60,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
     // Load workspace data on mount or projectId change
     useEffect(() => {
-        if (!projectId) return
+        if (!projectId) {
+            console.log('[Workspace] No projectId, skipping load')
+            return
+        }
 
         // Only reset state if projectId actually changed
         const projectIdChanged = prevProjectIdRef.current !== projectId
+        console.log('[Workspace] Load effect triggered', {
+            projectId,
+            projectIdChanged,
+            prevProjectId: prevProjectIdRef.current,
+            isLoaded
+        })
+
         if (projectIdChanged) {
+            console.log('[Workspace] Project ID changed, resetting state')
             setCanvasNodes([])
             setCanvasEdges([])
             setErdData(null)
@@ -75,20 +86,45 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
         const loadWorkspace = async () => {
             try {
+                console.log('[Workspace] Loading workspace data for project:', projectId)
                 const backendUrl = getBackendUrl()
                 const res = await fetch(`${backendUrl}/project/${projectId}`, {
                     credentials: 'include',
                 })
 
+                console.log('[Workspace] Fetch response:', res.status, res.ok)
+
                 if (res.ok) {
                     const data = await res.json()
+                    console.log('[Workspace] Received data:', {
+                        hasErdData: !!data.project?.erdData,
+                        hasCanvasData: !!data.project?.canvasData,
+                        nodesCount: data.project?.canvasData?.nodes?.length || 0,
+                        edgesCount: data.project?.canvasData?.edges?.length || 0
+                    })
+
                     if (data.project?.erdData) {
+                        console.log('[Workspace] Setting ERD data:', data.project.erdData)
                         setErdData(data.project.erdData)
+                    } else {
+                        console.log('[Workspace] No ERD data found in response')
                     }
+
                     if (data.project?.canvasData) {
                         const canvasData = data.project.canvasData
-                        if (canvasData.nodes) setCanvasNodes(canvasData.nodes)
-                        if (canvasData.edges) setCanvasEdges(canvasData.edges)
+                        console.log('[Workspace] Canvas data found:', {
+                            nodes: canvasData.nodes?.length || 0,
+                            edges: canvasData.edges?.length || 0
+                        })
+
+                        if (canvasData.nodes) {
+                            console.log('[Workspace] Setting canvas nodes:', canvasData.nodes.length, 'nodes')
+                            setCanvasNodes(canvasData.nodes)
+                        }
+                        if (canvasData.edges) {
+                            console.log('[Workspace] Setting canvas edges:', canvasData.edges.length, 'edges')
+                            setCanvasEdges(canvasData.edges)
+                        }
 
                         // Initialize hash
                         const hash = JSON.stringify({ nodes: canvasData.nodes || [], edges: canvasData.edges || [] })
@@ -97,29 +133,47 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         if (data.project.lastGeneratedAt) {
                             setLastGeneratedHash(hash)
                         }
+                    } else {
+                        console.log('[Workspace] No canvas data in response')
                     }
+                } else {
+                    console.error('[Workspace] Failed to load, status:', res.status)
                 }
             } catch (error) {
-                console.error("Failed to load workspace:", error)
+                console.error("[Workspace] Failed to load workspace:", error)
             } finally {
                 setIsLoaded(true)
+                console.log('[Workspace] Load complete, isLoaded set to true')
             }
         }
 
         // Only fetch if projectId changed or data not loaded
         if (projectIdChanged || !isLoaded) {
+            console.log('[Workspace] Triggering loadWorkspace()')
             loadWorkspace()
+        } else {
+            console.log('[Workspace] Skipping load - already loaded and project unchanged')
         }
     }, [projectId])
 
     // Auto-save effect
     useEffect(() => {
-        if (!isLoaded || !projectId) return
+        if (!isLoaded || !projectId) {
+            console.log('[Workspace] Skipping auto-save:', { isLoaded, hasProjectId: !!projectId })
+            return
+        }
 
         const saveWorkspace = async () => {
             try {
+                console.log('[Workspace] Auto-saving workspace:', {
+                    projectId,
+                    nodesCount: canvasNodes.length,
+                    edgesCount: canvasEdges.length,
+                    hasErdData: !!erdData
+                })
+
                 const backendUrl = getBackendUrl()
-                await fetch(`${backendUrl}/project/${projectId}`, {
+                const response = await fetch(`${backendUrl}/project/${projectId}`, {
                     method: "PUT",
                     credentials: 'include',
                     headers: { "Content-Type": "application/json" },
@@ -128,8 +182,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                         canvasData: { nodes: canvasNodes, edges: canvasEdges }
                     })
                 })
+
+                if (response.ok) {
+                    console.log('[Workspace] Auto-save successful')
+                } else {
+                    console.error('[Workspace] Auto-save failed with status:', response.status)
+                }
             } catch (error) {
-                console.error("Auto-save failed:", error)
+                console.error("[Workspace] Auto-save failed:", error)
             }
         }
 

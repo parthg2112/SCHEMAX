@@ -1,14 +1,22 @@
 {
-    "name": "SCHEMAX-monorepo",
+    "name": "ablelove",
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "dev": "turbo dev",
-        "build": "turbo build",
-        "lint": "turbo lint"
+        "dev": "turbo run dev",
+        "dev:web": "pnpm --filter=web dev",
+        "dev:api": "pnpm --filter=api dev",
+        "dev:split": "echo '\n Run these in separate terminals:\n  Terminal 1: pnpm dev:api\n  Terminal 2: pnpm dev:web\n'",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "type-check": "turbo run type-check",
+        "clean": "turbo run clean && rm -rf node_modules"
     },
     "devDependencies": {
-        "turbo": "^2.3.3"
+        "turbo": "^2.6.3"
     },
-    "packageManager": "pnpm@10.20.0"
+    "packageManager": "pnpm@10.20.0",
+    "engines": {
+        "node": ">=20.0.0"
+    }
 }

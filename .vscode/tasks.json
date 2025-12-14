@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "api#dev",
+            "type": "shell",
+            "command": "pnpm",
+            "args": [
+                "--filter=api",
+                "dev"
+            ],
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "dev"
+            }
+        },
+        {
+            "label": "web#dev",
+            "type": "shell",
+            "command": "pnpm",
+            "args": [
+                "--filter=web",
+                "dev"
+            ],
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "dev"
+            }
+        },
+        {
+            "label": "dev (all)",
+            "dependsOn": [
+                "api#dev",
+                "web#dev"
+            ],
+            "dependsOrder": "parallel",
+            "problemMatcher": []
+        }
+    ]
+}

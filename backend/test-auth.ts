@@ -8,7 +8,6 @@ async function testAuth() {
         console.log("Testing BetterAuth configuration...");
         console.log("Database URL set:", !!process.env.DATABASE_URL);
         console.log("BetterAuth Secret set:", !!process.env.BETTER_AUTH_SECRET);
-        console.log("Frontend URL:", process.env.FRONTEND_URL);
 
         // Try to sign up a user
         console.log("\n=== Testing Sign Up ===");

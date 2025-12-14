@@ -6,9 +6,9 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
-      - "3000:3000"
+      - "3060:3000"
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=https://schemax.parthg.me/api
+      - NEXT_PUBLIC_BACKEND_URL=http://backend/
     depends_on:
       - backend
 
@@ -16,26 +16,24 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    ports:
-      - "3001:3001"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/schemax
-      - FRONTEND_URL=https://schemax.parthg.me
-      - BETTER_AUTH_URL=https://schemax.parthg.me/api
-      - PORT=3001
-    depends_on:
-      - db
+      # - DATABASE_URL=postgresql://postgres:postgres@db:5432/schemax
+      - PORT=80
+    # depends_on:
+    #   - db
 
-  db:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=schemax
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+#   db:
+#     image: postgres:15-alpine
+#     environment:
+#       - POSTGRES_USER=postgres
+#       - POSTGRES_PASSWORD=postgres
+#       - POSTGRES_DB=schemax
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
+# volumes:
+#   postgres_data:
+
+networks:
+  internal:
+    driver: bridge

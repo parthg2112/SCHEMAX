@@ -10,18 +10,7 @@ import paymentRouter from "./router/payment";
 
 dotenv.config();
 
-import cors from "cors";
-
 const app = express();
-
-app.use(cors({
-    origin: [process.env.FRONTEND_URL || "http://localhost:3000"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-}));
-
-app.options(/.*/, cors()); // Enable pre-flight for all routes
 
 // Mount Better Auth handler BEFORE express.json()
 app.all("/api/auth/*splat", toNodeHandler(auth));

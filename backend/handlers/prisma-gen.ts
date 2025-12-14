@@ -1,6 +1,6 @@
 import { streamText } from "ai";
-import { googleAi } from "../lib/google-ai";
-import { prisma } from "../lib/db";
+import { googleAi } from "../lib/google-ai.js";
+import { prisma } from "../lib/db.js";
 import { Request, Response } from "express";
 
 const generatePrismaHandler = async (

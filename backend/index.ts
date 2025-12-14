@@ -2,11 +2,11 @@ import express from "express";
 
 import dotenv from "dotenv";
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "./lib/auth";
-import erdGenRouter from "./router/erd-gen";
-import prismaGenRouter from "./router/prisma-gen";
-import projectRouter from "./router/project";
-import paymentRouter from "./router/payment";
+import { auth } from "./lib/auth.js";
+import erdGenRouter from "./router/erd-gen.js";
+import prismaGenRouter from "./router/prisma-gen.js";
+import projectRouter from "./router/project.js";
+import paymentRouter from "./router/payment.js";
 
 dotenv.config();
 

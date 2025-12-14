@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/db";
+import { prisma } from "../lib/db.js";
 import { randomUUID } from "crypto";
 
 const getAllProjectsHandler = async (req: Request, res: Response) => {

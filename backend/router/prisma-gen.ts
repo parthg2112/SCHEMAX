@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { generatePrismaHandler } from "../handlers/prisma-gen";
-import { authMiddleware } from "../middleware/auth";
-import { rateLimitMiddleware } from "../middleware/rateLimiter";
+import { generatePrismaHandler } from "../handlers/prisma-gen.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { rateLimitMiddleware } from "../middleware/rateLimiter.js";
 
 const router = Router();
 

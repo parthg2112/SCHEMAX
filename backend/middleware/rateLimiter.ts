@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../lib/db';
+import { prisma } from '../lib/db.js';
 
 // Rate limit constants
 const FREE_TIER_DAILY_LIMIT = 10;

@@ -7,8 +7,8 @@ import {
     updateProjectHandler,
     saveMessagesHandler,
     getProjectCodeHandler
-} from "../handlers/project";
-import { authMiddleware } from "../middleware/auth";
+} from "../handlers/project.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 

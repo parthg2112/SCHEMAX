@@ -2,30 +2,21 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+RUN apk add --no-cache openssl
 
-# Copy root workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Copy backend package.json
+COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
-# Copy frontend package.json (needed for workspace resolution)
 COPY frontend/package.json ./frontend/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
-# Copy source code
 COPY . .
 
-# Build backend
 WORKDIR /app/backend
 RUN npx prisma generate
-RUN pnpm run build
+RUN npm run build
+RUN cp -r generated dist/
 
-# Expose port
 EXPOSE 3001
 
-# Start the application
 CMD ["node", "dist/index.js"]

@@ -7,3 +7,4 @@ node_modules/
 /lib/generated/prisma
 
 /generated/prisma
+/dist

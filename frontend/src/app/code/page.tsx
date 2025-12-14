@@ -12,6 +12,7 @@ import {
 import { FileExplorer, FileNode } from "@/components/code/file-explorer"
 import { CodeViewer } from "@/components/code/code-viewer"
 import { useSearchParams } from "next/navigation"
+import { getBackendUrl } from "@/lib/api-url"
 
 export default function CodePage() {
     return (
@@ -43,7 +44,7 @@ function CodePageContent() {
 
         const fetchProjectCode = async () => {
             try {
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const backendUrl = getBackendUrl()
                 const res = await fetch(`${backendUrl}/project/${projectId}/code`, {
                     credentials: 'include',
                 })

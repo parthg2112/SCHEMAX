@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { LoginForm } from "@/components/login-form";
 
+import { getBackendUrl } from "@/lib/api-url";
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -16,7 +18,7 @@ export default function LoginPage() {
 
         if (session.data?.user) {
           // User is authenticated, fetch their projects
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+          const backendUrl = getBackendUrl()
           const response = await fetch(`${backendUrl}/project`, {
             credentials: 'include',
           })

@@ -8,7 +8,8 @@ services:
     ports:
       - "3060:3000"
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://backend/
+      - NEXT_PUBLIC_BACKEND_URL=/api
+      - INTERNAL_BACKEND_URL=http://backend:80
     depends_on:
       - backend
 

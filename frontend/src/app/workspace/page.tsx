@@ -12,6 +12,8 @@ import {
     ResizablePanelGroup,
 } from "@/components/ui/resizable"
 
+import { getBackendUrl } from "@/lib/api-url"
+
 export default function WorkspacePage() {
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -37,7 +39,7 @@ export default function WorkspacePage() {
                     setIsLoading(false)
                 } else {
                     // No project found - fetch user's projects and select first one
-                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                    const backendUrl = getBackendUrl()
                     const response = await fetch(`${backendUrl}/project`, {
                         credentials: 'include',
                     })

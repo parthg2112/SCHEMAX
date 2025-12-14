@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select"
 
 
+import { getBackendUrl } from "@/lib/api-url"
+
 interface CanvasPanelProps {
     projectId: string
 }
@@ -160,7 +162,7 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                 attributes: node.data.attributes
             }))
 
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const backendUrl = getBackendUrl()
 
             const response = await fetch(`${backendUrl}/prisma/generate?projectId=${projectId}`, {
                 method: "POST",

@@ -12,6 +12,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { getBackendUrl } from "@/lib/api-url"
 
 interface Project {
     id: string
@@ -34,7 +35,7 @@ export function WorkspaceSelector() {
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const backendUrl = getBackendUrl()
                 const res = await fetch(`${backendUrl}/project`, {
                     credentials: 'include',
                 })
@@ -76,7 +77,7 @@ export function WorkspaceSelector() {
         if (!confirm("Are you sure you want to delete this workspace?")) return
 
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const backendUrl = getBackendUrl()
             const res = await fetch(`${backendUrl}/project/${projectId}`, {
                 method: "DELETE",
                 credentials: 'include',
@@ -125,7 +126,7 @@ export function WorkspaceSelector() {
         }
 
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const backendUrl = getBackendUrl()
             const res = await fetch(`${backendUrl}/project/${projectId}`, {
                 method: "PUT",
                 credentials: 'include',
@@ -151,7 +152,7 @@ export function WorkspaceSelector() {
 
     const handleNewProject = async () => {
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const backendUrl = getBackendUrl()
             const res = await fetch(`${backendUrl}/project`, {
                 method: "POST",
                 credentials: 'include',

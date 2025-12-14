@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useWorkspace } from "@/contexts/workspace-context"
 import { ShimmeringText } from "@/components/ui/shadcn-io/shimmering-text"
+import { getBackendUrl } from "@/lib/api-url"
 
 interface Message {
     id: string
@@ -47,7 +48,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
     React.useEffect(() => {
         const loadMessages = async () => {
             try {
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const backendUrl = getBackendUrl()
                 const res = await fetch(`${backendUrl}/project/${projectId}`, {
                     credentials: 'include',
                 })
@@ -88,7 +89,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         const timer = setTimeout(async () => {
             if (!isLoadingMessages) {
                 try {
-                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                    const backendUrl = getBackendUrl()
                     await fetch(`${backendUrl}/project/${projectId}/messages`, {
                         method: "POST",
                         credentials: 'include',
@@ -120,7 +121,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         setStreamedContent("")
 
         try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const backendUrl = getBackendUrl()
             const response = await fetch(`${backendUrl}/erd/generate?projectId=${projectId}`, {
                 method: "POST",
                 credentials: 'include',

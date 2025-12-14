@@ -15,6 +15,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Make INTERNAL_BACKEND_URL available during build for next.config.ts
+ARG INTERNAL_BACKEND_URL=http://backend:80
+ENV INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL}
+
 WORKDIR /app/frontend
 RUN npm run build
 

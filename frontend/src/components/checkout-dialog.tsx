@@ -12,6 +12,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 
+import { getBackendUrl } from "@/lib/api-url"
+
 // Cashfree will be dynamically imported when needed
 // import {
 //     Cashfree,
@@ -40,7 +42,7 @@ export function CheckoutDialog({ open, onOpenChange, amount, planName }: Checkou
 
         try {
             // TODO: Create payment session on backend
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+            const backendUrl = getBackendUrl()
             const response = await fetch(`${backendUrl}/payment/create-order`, {
                 method: "POST",
                 credentials: 'include',

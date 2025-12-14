@@ -4,6 +4,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect,
 import { ParsedERD, Entity } from '@/lib/mermaid-parser'
 import { Node, Edge } from '@xyflow/react'
 import { useSearchParams } from 'next/navigation'
+import { getBackendUrl } from '@/lib/api-url'
 
 interface HistoryState {
     nodes: Node[]
@@ -74,7 +75,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
         const loadWorkspace = async () => {
             try {
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const backendUrl = getBackendUrl()
                 const res = await fetch(`${backendUrl}/project/${projectId}`, {
                     credentials: 'include',
                 })
@@ -117,7 +118,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
         const saveWorkspace = async () => {
             try {
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+                const backendUrl = getBackendUrl()
                 await fetch(`${backendUrl}/project/${projectId}`, {
                     method: "PUT",
                     credentials: 'include',

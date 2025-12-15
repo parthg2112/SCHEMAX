@@ -1,4 +1,4 @@
-'use client';
+'use server';
 
 import * as React from 'react';
 import { useInView, type UseInViewOptions } from 'motion/react';

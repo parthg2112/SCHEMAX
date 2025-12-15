@@ -1,4 +1,4 @@
-'use client';
+'use server';
 
 import * as React from 'react';
 import { ChevronsUpDown, SettingsIcon, UserIcon, ChevronDownIcon } from 'lucide-react';

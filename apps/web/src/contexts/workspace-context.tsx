@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react'
 import { ParsedERD, Entity } from '@/lib/mermaid-parser'

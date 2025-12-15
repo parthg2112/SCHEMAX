@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import * as React from "react"
 import { ReactFlow, Background, Controls, MiniMap, Panel, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, Edge } from '@xyflow/react'

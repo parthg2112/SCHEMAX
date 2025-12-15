@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import * as React from "react"
 import { Send, Bot, User, Loader2 } from "lucide-react"

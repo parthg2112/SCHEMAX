@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import React, { memo, useState } from 'react'
 import { Handle, Position, NodeProps, Node } from '@xyflow/react'

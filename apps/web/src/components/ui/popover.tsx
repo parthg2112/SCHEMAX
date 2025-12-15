@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"

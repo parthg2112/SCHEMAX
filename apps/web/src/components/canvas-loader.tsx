@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import ClassicLoader from "@/components/ui/loader"
 

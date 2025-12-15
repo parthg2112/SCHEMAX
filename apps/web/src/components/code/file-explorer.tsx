@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import * as React from "react"
 import { FileCode, FileJson, Folder, ChevronRight, ChevronDown, Database } from "lucide-react"

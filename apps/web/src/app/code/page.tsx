@@ -1,4 +1,4 @@
-"use client"
+"use server"
 
 import * as React from "react"
 import { Download, Loader2 } from "lucide-react"

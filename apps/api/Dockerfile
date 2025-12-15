@@ -1,27 +1,22 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-RUN apk add --no-cache openssl
+RUN corepack enable
 
-# Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
-# Install pnpm and dependencies
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-# Build the API
-WORKDIR /app/apps/api
-RUN npm run prisma:generate
-RUN corepack enable pnpm && pnpm run build
+RUN pnpm --filter api exec prisma generate
+RUN pnpm --filter api run build
 
 ENV NODE_ENV=production
-
 EXPOSE 80
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "apps/api/dist/index.js"]

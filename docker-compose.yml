@@ -4,12 +4,12 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        INTERNAL_BACKEND_URL: http://api:80
+        INTERNAL_BACKEND_URL: http://api
     ports:
       - "3060:3000"
     environment:
       - NEXT_PUBLIC_BACKEND_URL=/api
-      - INTERNAL_BACKEND_URL=http://api:80
+      - INTERNAL_BACKEND_URL=http://api
     depends_on:
       - api
 

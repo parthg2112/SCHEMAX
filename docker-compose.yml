@@ -1,24 +1,32 @@
-version: '3.8'
-
 services:
-  frontend:
+  api:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./apps/api
+      dockerfile: Dockerfile
+    environment:
+      - PORT=80
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=http://api
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        INTERNAL_BACKEND_URL: http://api
     ports:
       - "3060:3000"
     environment:
       - NEXT_PUBLIC_BACKEND_URL=/api
-      - INTERNAL_BACKEND_URL=http://backend:80
+      - INTERNAL_BACKEND_URL=http://api
     depends_on:
-      - backend
-
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    environment:
-      - PORT=80
+      - api
+    networks:
+      - internal
 
 networks:
   internal:

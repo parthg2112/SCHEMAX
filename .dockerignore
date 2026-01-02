@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+
+# Version control
+.git
+.gitignore
+
+# Development files
+*.log
+.env*
+!.env.example
+.DS_Store
+**/.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# Test files
+coverage
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+
+# Generated files
+apps/api/generated
+apps/api/templates

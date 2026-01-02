@@ -1,0 +1,37 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false index.ts",
+    "build": "prisma generate && tsc && cp -r generated dist/",
+    "start": "node dist/index.js",
+    "lint": "echo 'No linting configured for API yet'",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules generated"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.44",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/pg": "^8.15.6",
+    "ai": "^5.0.108",
+    "better-auth": "^1.4.5",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "@prisma/client": "5.22.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "prisma": "5.22.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

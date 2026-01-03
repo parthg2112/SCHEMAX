@@ -1,5 +1,8 @@
 FROM oven/bun:1-alpine
 
+# Install OpenSSL for Prisma (it needs libssl)
+RUN apk add --no-cache openssl openssl-dev
+
 WORKDIR /app
 
 # Copy package files

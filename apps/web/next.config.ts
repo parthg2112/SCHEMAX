@@ -26,9 +26,15 @@ const nextConfig: NextConfig = {
         console.log(`[Next.js Rewrites] Using backend URL: ${backendUrl}`);
 
         return [
+            // Auth routes - keep /api prefix (API mounts at /api/auth/*)
+            {
+                source: '/api/auth/:path*',
+                destination: `${backendUrl}/api/auth/:path*`,
+            },
+            // All other API routes - strip /api prefix
             {
                 source: '/api/:path*',
-                destination: `${backendUrl}/api/:path*`,
+                destination: `${backendUrl}/:path*`,
             },
         ]
     },

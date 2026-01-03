@@ -3,12 +3,10 @@ services:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
+    env_file:
+      - ./apps/api/.env
     environment:
       - PORT=80
-      - DATABASE_URL=${DATABASE_URL}
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=http://api
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     networks:
       - internal
 

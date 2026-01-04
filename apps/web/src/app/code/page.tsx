@@ -1,18 +1,25 @@
 "use client"
 
 import * as React from "react"
-import { Download, Loader2 } from "lucide-react"
+import { Download, Loader2, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup,
-} from "@/components/ui/resizable"
-import { FileExplorer, FileNode } from "@/components/code/file-explorer"
-import { CodeViewer } from "@/components/code/code-viewer"
 import { useSearchParams } from "next/navigation"
 import { getBackendUrl } from "@/lib/api-url"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+
+interface SchemaInfo {
+    filename: string
+    language: string
+    content: string
+    downloadName: string
+}
 
 export default function CodePage() {
     return (
@@ -30,10 +37,36 @@ function CodePageContent() {
     const searchParams = useSearchParams()
     const projectId = searchParams.get("projectId") || ""
 
-    const [files, setFiles] = React.useState<FileNode[]>([])
-    const [selectedFile, setSelectedFile] = React.useState<FileNode | null>(null)
+    const [schema, setSchema] = React.useState<SchemaInfo | null>(null)
+    const [ormType, setOrmType] = React.useState<string>("prisma")
+    const [projectName, setProjectName] = React.useState<string>("")
     const [isLoading, setIsLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
+    const [copied, setCopied] = React.useState(false)
+
+    const fetchSchema = React.useCallback(async (orm: string) => {
+        if (!projectId) return
+
+        try {
+            setIsLoading(true)
+            const backendUrl = getBackendUrl()
+            const res = await fetch(`${backendUrl}/project/${projectId}/code?ormType=${orm}`, {
+                credentials: 'include',
+            })
+
+            if (!res.ok) throw new Error("Failed to fetch schema")
+
+            const data = await res.json()
+            setSchema(data.schema)
+            setOrmType(data.ormType || "prisma")
+            setProjectName(data.projectName || "")
+        } catch (err) {
+            console.error(err)
+            setError("Failed to load schema")
+        } finally {
+            setIsLoading(false)
+        }
+    }, [projectId])
 
     React.useEffect(() => {
         if (!projectId) {
@@ -41,52 +74,32 @@ function CodePageContent() {
             setIsLoading(false)
             return
         }
+        fetchSchema(ormType)
+    }, [projectId, fetchSchema])
 
-        const fetchProjectCode = async () => {
-            try {
-                const backendUrl = getBackendUrl()
-                const res = await fetch(`${backendUrl}/project/${projectId}/code`, {
-                    credentials: 'include',
-                })
+    const handleOrmChange = (newOrm: string) => {
+        setOrmType(newOrm)
+        fetchSchema(newOrm)
+    }
 
-                if (!res.ok) throw new Error("Failed to fetch project code")
-
-                const data = await res.json()
-                setFiles(data.files || [])
-
-                // Try to find schema.prisma to select by default, otherwise select first file
-                // Helper to find file recursively
-                const findSchema = (nodes: FileNode[]): FileNode | null => {
-                    for (const node of nodes) {
-                        if (node.name === 'schema.prisma') return node;
-                        if (node.children) {
-                            const found = findSchema(node.children);
-                            if (found) return found;
-                        }
-                    }
-                    return null;
-                }
-
-                const schemaNode = findSchema(data.files);
-                if (schemaNode) {
-                    setSelectedFile(schemaNode);
-                } else if (data.files.length > 0) {
-                    setSelectedFile(data.files[0]);
-                }
-
-            } catch (err) {
-                console.error(err)
-                setError("Failed to load project code")
-            } finally {
-                setIsLoading(false)
-            }
-        }
-
-        fetchProjectCode()
-    }, [projectId])
+    const handleCopy = async () => {
+        if (!schema) return
+        await navigator.clipboard.writeText(schema.content)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
 
     const handleDownload = () => {
-        alert("Downloading generated code as ZIP... (Feature coming soon)")
+        if (!schema) return
+        const blob = new Blob([schema.content], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = schema.downloadName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
     }
 
     if (isLoading) {
@@ -109,7 +122,7 @@ function CodePageContent() {
         <div className="h-full w-full pb-4 px-4 flex flex-col">
             <div className="flex-1 rounded-xl border bg-background shadow-sm overflow-hidden flex flex-col">
                 {/* Toolbar */}
-                <div className="h-12 border-b flex items-center justify-between px-4 bg-muted/20">
+                <div className="h-14 border-b flex items-center justify-between px-4 bg-muted/20">
                     <div className="flex items-center gap-4">
                         <Link href={`/workspace?projectId=${projectId}`} prefetch={true}>
                             <Button
@@ -122,39 +135,45 @@ function CodePageContent() {
                         </Link>
                         <div className="h-4 w-px bg-border" />
                         <div className="text-sm font-medium">
-                            {selectedFile ? selectedFile.name : "No file selected"}
+                            {projectName && <span className="text-muted-foreground mr-2">{projectName} /</span>}
+                            {schema?.filename}
                         </div>
                     </div>
-                    <Button size="sm" onClick={handleDownload} className="gap-2">
-                        <Download className="h-4 w-4" />
-                        Download ZIP
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Select value={ormType} onValueChange={handleOrmChange}>
+                            <SelectTrigger className="w-32">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="prisma">Prisma</SelectItem>
+                                <SelectItem value="drizzle">Drizzle</SelectItem>
+                                <SelectItem value="sql">SQL</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copied ? "Copied!" : "Copy"}
+                        </Button>
+                        <Button size="sm" onClick={handleDownload} className="gap-2">
+                            <Download className="h-4 w-4" />
+                            Download
+                        </Button>
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden">
-                    <ResizablePanelGroup direction="horizontal">
-                        <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                            <FileExplorer
-                                files={files}
-                                selectedFileId={selectedFile?.id || null}
-                                onSelectFile={setSelectedFile}
-                            />
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={75}>
-                            {selectedFile && selectedFile.content ? (
-                                <CodeViewer
-                                    code={selectedFile.content}
-                                    language={selectedFile.language || "plaintext"}
-                                    filename={selectedFile.name}
-                                />
-                            ) : (
-                                <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-                                    Select a file to view content
-                                </div>
-                            )}
-                        </ResizablePanel>
-                    </ResizablePanelGroup>
+                {/* Schema Content */}
+                <div className="flex-1 overflow-auto">
+                    {schema ? (
+                        <pre className="p-4 font-mono text-sm leading-relaxed">
+                            <code className={`language-${schema.language}`}>
+                                {schema.content}
+                            </code>
+                        </pre>
+                    ) : (
+                        <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                            No schema generated yet
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -202,11 +202,9 @@ const saveMessagesHandler = async (req: Request, res: Response) => {
     }
 };
 
-import * as fs from 'fs';
 import * as path from 'path';
 
-// ... existing imports
-
+// Schema handler - returns just the generated schema content
 const getProjectCodeHandler = async (req: Request, res: Response) => {
     const user = (req as any).user;
     const { projectId } = req.params;
@@ -225,82 +223,120 @@ const getProjectCodeHandler = async (req: Request, res: Response) => {
         }
 
         const ormType = project.ormType || 'prisma';
-        const boilerplatePath = path.join(process.cwd(), 'templates', ormType);
+        const schemaContent = project.prismaSchema || getDefaultSchema(ormType);
 
-        // Helper to recursively read directory
-        const readDir = (dirPath: string, relativePath: string = ''): any[] => {
-            if (!fs.existsSync(dirPath)) return [];
+        // Return schema info based on ORM type
+        const schemaInfo = getSchemaInfo(ormType, schemaContent);
 
-            const items = fs.readdirSync(dirPath);
-            const nodes: any[] = [];
-
-            for (const item of items) {
-                const fullPath = path.join(dirPath, item);
-                const itemRelativePath = path.join(relativePath, item);
-                const stat = fs.statSync(fullPath);
-
-                if (stat.isDirectory()) {
-                    if (item === 'node_modules' || item === '.git') continue;
-
-                    nodes.push({
-                        id: itemRelativePath,
-                        name: item,
-                        type: 'folder',
-                        children: readDir(fullPath, itemRelativePath)
-                    });
-                } else {
-                    let content = '';
-                    try {
-                        // Inject generated schema based on ORM type
-                        let isSchemaFile = false;
-                        if (ormType === 'prisma' && item === 'schema.prisma' && relativePath.includes('prisma')) {
-                            isSchemaFile = true;
-                        } else if (ormType === 'drizzle' && item === 'schema.ts' && (relativePath.includes('db') || relativePath.includes('src/db'))) {
-                            isSchemaFile = true;
-                        } else if (ormType === 'sql' && item === 'init.sql' && relativePath.includes('db')) {
-                            isSchemaFile = true;
-                        }
-
-                        if (isSchemaFile && project.prismaSchema) {
-                            content = project.prismaSchema;
-                        } else {
-                            // Only read text files, skip binaries/images for now to save bandwidth
-                            // or limit size
-                            if (stat.size < 100000) { // < 100KB
-                                content = fs.readFileSync(fullPath, 'utf-8');
-                            } else {
-                                content = "// File too large to display";
-                            }
-                        }
-                    } catch (e) {
-                        content = "// Error reading file";
-                    }
-
-                    nodes.push({
-                        id: itemRelativePath,
-                        name: item,
-                        type: 'file',
-                        language: getLanguageFromExt(item),
-                        content
-                    });
-                }
-            }
-
-            // Sort folders first, then files
-            return nodes.sort((a, b) => {
-                if (a.type === b.type) return a.name.localeCompare(b.name);
-                return a.type === 'folder' ? -1 : 1;
-            });
-        };
-
-        const files = readDir(boilerplatePath);
-        res.json({ files });
+        res.json({
+            schema: schemaInfo,
+            ormType,
+            projectName: project.name
+        });
 
     } catch (error) {
-        console.error("Error fetching project code:", error);
+        console.error("Error fetching project schema:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+// Get schema file info based on ORM type
+function getSchemaInfo(ormType: string, content: string) {
+    switch (ormType) {
+        case 'prisma':
+            return {
+                filename: 'schema.prisma',
+                language: 'prisma',
+                content,
+                downloadName: 'schema.prisma'
+            };
+        case 'drizzle':
+            return {
+                filename: 'schema.ts',
+                language: 'typescript',
+                content: convertToDrizzleSchema(content),
+                downloadName: 'schema.ts'
+            };
+        case 'sql':
+            return {
+                filename: 'schema.sql',
+                language: 'sql',
+                content: convertToSqlSchema(content),
+                downloadName: 'schema.sql'
+            };
+        default:
+            return {
+                filename: 'schema.prisma',
+                language: 'prisma',
+                content,
+                downloadName: 'schema.prisma'
+            };
+    }
+}
+
+// Default schema templates
+function getDefaultSchema(ormType: string): string {
+    switch (ormType) {
+        case 'prisma':
+            return `generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define your models here
+`;
+        case 'drizzle':
+            return `import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+
+// Define your schema here
+`;
+        case 'sql':
+            return `-- PostgreSQL Schema
+-- Define your tables here
+`;
+        default:
+            return '';
+    }
+}
+
+// Convert Prisma schema to Drizzle format (basic conversion)
+function convertToDrizzleSchema(prismaSchema: string): string {
+    // If already in Drizzle format, return as-is
+    if (prismaSchema.includes('drizzle-orm')) {
+        return prismaSchema;
+    }
+
+    // For now, return the Prisma schema with a note
+    // TODO: Implement proper Prisma -> Drizzle conversion
+    return `import { pgTable, serial, text, timestamp, integer, boolean, varchar } from 'drizzle-orm/pg-core';
+
+// Converted from Prisma schema
+// Note: Manual adjustments may be needed
+
+${prismaSchema}
+`;
+}
+
+// Convert Prisma schema to SQL DDL (basic conversion)
+function convertToSqlSchema(prismaSchema: string): string {
+    // If already in SQL format, return as-is
+    if (prismaSchema.includes('CREATE TABLE')) {
+        return prismaSchema;
+    }
+
+    // For now, return the Prisma schema with a note
+    // TODO: Implement proper Prisma -> SQL conversion
+    return `-- PostgreSQL Schema
+-- Converted from Prisma schema
+-- Note: Manual adjustments may be needed
+
+${prismaSchema}
+`;
+}
 
 function getLanguageFromExt(filename: string): string {
     const ext = path.extname(filename).toLowerCase();

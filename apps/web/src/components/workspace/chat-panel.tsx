@@ -1,12 +1,9 @@
-"use client"
-
+import { Bot, Loader2, Send, User } from "lucide-react"
 import * as React from "react"
-import { Send, Bot, User, Loader2 } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
 import { useWorkspace } from "@/contexts/workspace-context"
-import { ShimmeringText } from "@/components/ui/shadcn-io/shimmering-text"
 import { getBackendUrl } from "@/lib/api-url"
 
 interface Message {
@@ -49,13 +46,14 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         const loadMessages = async () => {
             try {
                 const backendUrl = getBackendUrl()
-                const res = await fetch(`${backendUrl}/project/${projectId}`, {
+                const res = await fetch(`${backendUrl} /project/${projectId} `, {
                     credentials: 'include',
                 })
 
                 if (res.ok) {
                     const data = await res.json()
                     if (data.project?.messages && data.project.messages.length > 0) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const loadedMessages = data.project.messages.map((msg: any) => ({
                             id: msg.id,
                             role: msg.role as "user" | "assistant",
@@ -90,7 +88,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
             if (!isLoadingMessages) {
                 try {
                     const backendUrl = getBackendUrl()
-                    await fetch(`${backendUrl}/project/${projectId}/messages`, {
+                    await fetch(`${backendUrl} /project/${projectId}/messages`, {
                         method: "POST",
                         credentials: 'include',
                         headers: { "Content-Type": "application/json" },
@@ -240,34 +238,19 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
 
     return (
         <div className="flex h-full flex-col bg-background border-r">
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
                     <div
                         key={message.id}
-                        className={cn(
-                            "flex w-full gap-3",
-                            message.role === "user" ? "flex-row-reverse" : "flex-row"
-                        )}
+                        className={`flex w-full gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                     >
                         <div
-                            className={cn(
-                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
-                                message.role === "assistant" ? "bg-primary text-primary-foreground" : "bg-muted"
-                            )}
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${message.role === "user" ? "bg-background" : "bg-primary text-primary-foreground"}`}
                         >
-                            {message.role === "assistant" ? (
-                                <Bot className="h-4 w-4" />
-                            ) : (
-                                <User className="h-4 w-4" />
-                            )}
+                            {message.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                         </div>
                         <div
-                            className={cn(
-                                "flex max-w-[80%] flex-col gap-1 rounded-lg px-4 py-2 text-sm",
-                                message.role === "assistant"
-                                    ? "bg-muted text-foreground"
-                                    : "bg-primary text-primary-foreground"
-                            )}
+                            className={`flex max-w-[80%] flex-col gap-1 rounded-lg px-4 py-2 text-sm ${message.role === "user" ? "bg-muted text-foreground" : "bg-muted text-foreground"}`}
                         >
                             <div className="whitespace-pre-wrap">{message.content}</div>
                             <span className="text-[10px] opacity-50">
@@ -295,8 +278,12 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-primary text-primary-foreground">
                             <Bot className="h-4 w-4" />
                         </div>
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            <ShimmeringText text="Thinking..." className="text-sm font-medium" />
+                        <div className="flex max-w-[80%] flex-col gap-1 rounded-lg bg-muted px-4 py-2 text-sm text-foreground">
+                            <div className="flex gap-1">
+                                <span className="animate-bounce">.</span>
+                                <span className="animate-bounce delay-100">.</span>
+                                <span className="animate-bounce delay-200">.</span>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -318,20 +305,19 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
 
             {/* Limit Exceeded Warning */}
             {isLimitExceeded && messageUsage && (
-                <div className="px-4 py-3 bg-orange-50 dark:bg-orange-950/20 border-t border-orange-200 dark:border-orange-900">
+                <div className="px-4 py-3 bg-orange-50 dark:bg-orange-950/20 border-t border-orange-200 dark:border-900">
                     <div className="text-sm">
                         <p className="font-medium text-orange-900 dark:text-orange-200 mb-1">
                             🚫 Daily limit reached
                         </p>
                         <p className="text-orange-700 dark:text-orange-300 text-xs mb-2">
-                            You've used all {messageUsage.limit} messages for today. Upgrade to Pro for 100+ messages/day!
+                            You&apos;ve used all {messageUsage.limit} messages for today. Upgrade to Pro for 100+ messages/day!
                         </p>
                         <Button
                             size="sm"
-                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                            className="w-full bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                             onClick={() => window.dispatchEvent(new CustomEvent('openPricing'))}
-                        >
-                            Upgrade to Pro
+                        >                      Upgrade to Pro
                         </Button>
                     </div>
                 </div>

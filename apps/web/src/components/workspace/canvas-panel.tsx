@@ -234,16 +234,17 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                     </Button>
                 </Panel>
                 <Panel position="top-right" className="m-4 flex gap-2">
-                    <div className="flex items-center shadow-lg rounded-md overflow-hidden border border-transparent dark:border-gray-300">
+                    <div className="flex items-center shadow-sm rounded-full bg-background border border-border overflow-hidden transition-all duration-200 hover:shadow-md">
                         <Button
                             onClick={handleGenerate}
                             disabled={isGenerating || (canvasNodes.length === 0 && !isUpToDate)}
-                            className="rounded-none rounded-l-md bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 border-r border-white/20 dark:border-gray-300/20 disabled:opacity-50 px-4"
+                            variant="ghost"
+                            className="rounded-none rounded-l-full px-4 h-9 hover:bg-accent/50 disabled:opacity-50 font-medium"
                         >
                             {isGenerating ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Generating...
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
+                                    <span className="text-muted-foreground">Generating...</span>
                                 </>
                             ) : isUpToDate ? (
                                 "View Code"
@@ -251,17 +252,19 @@ export function CanvasPanel({ projectId }: CanvasPanelProps) {
                                 "Generate Schema"
                             )}
                         </Button>
+                        <div className="w-[1px] h-4 bg-border" />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    className="rounded-none rounded-r-md bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 px-2"
+                                    variant="ghost"
+                                    className="rounded-none rounded-r-full px-2 h-9 hover:bg-accent/50"
                                     disabled={isGenerating}
                                 >
                                     <span className="sr-only">Select ORM</span>
-                                    <ChevronDown className="h-4 w-4" />
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="rounded-xl">
                                 {["prisma", "drizzle", "sql"].map((type) => (
                                     <DropdownMenuItem
                                         key={type}

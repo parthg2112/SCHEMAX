@@ -7,6 +7,7 @@ services:
       - ./apps/api/.env
     environment:
       - PORT=80
+      - BETTER_AUTH_URL=http://localhost:3060
     networks:
       - internal
 
@@ -16,6 +17,7 @@ services:
       dockerfile: Dockerfile
       args:
         INTERNAL_BACKEND_URL: http://api
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:3060/api
     ports:
       - "3060:3000"
     environment:

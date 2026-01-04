@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { useWorkspaces } from "@/hooks/use-workspaces"
 import { WorkspaceProvider } from "@/contexts/workspace-context"
 import { ChatPanel } from "@/components/workspace/chat-panel"
 import { CanvasPanel } from "@/components/workspace/canvas-panel"
@@ -12,63 +13,25 @@ import {
     ResizablePanelGroup,
 } from "@/components/ui/resizable"
 
-import { getBackendUrl } from "@/lib/api-url"
+
 
 export default function WorkspacePage() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const [projectId, setProjectId] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+    const { projects, isLoading } = useWorkspaces()
+    const projectId = searchParams.get('projectId')
 
     useEffect(() => {
-        const loadProject = async () => {
-            try {
-                // Try to get projectId from query param first, then localStorage
-                const queryProjectId = searchParams.get('projectId')
-                const storedProjectId = localStorage.getItem('currentProjectId')
+        if (isLoading) return
 
-                if (queryProjectId) {
-                    // Use query param
-                    setProjectId(queryProjectId)
-                    localStorage.setItem('currentProjectId', queryProjectId)
-                    router.replace('/workspace', { scroll: false })
-                    setIsLoading(false)
-                } else if (storedProjectId) {
-                    // Use stored project
-                    setProjectId(storedProjectId)
-                    setIsLoading(false)
-                } else {
-                    // No project found - fetch user's projects and select first one
-                    const backendUrl = getBackendUrl()
-                    const response = await fetch(`${backendUrl}/project`, {
-                        credentials: 'include',
-                    })
-
-                    if (response.ok) {
-                        const projects = await response.json()
-                        if (projects && projects.length > 0) {
-                            // Auto-select first project
-                            const firstProject = projects[0]
-                            setProjectId(firstProject.id)
-                            localStorage.setItem('currentProjectId', firstProject.id)
-                            setIsLoading(false)
-                        } else {
-                            // No projects exist - redirect to home to create one
-                            router.push('/')
-                        }
-                    } else {
-                        // Failed to fetch - user might not be authenticated
-                        router.push('/')
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load workspace:', error)
+        if (!projectId) {
+            if (projects.length > 0) {
+                router.replace(`/workspace?projectId=${projects[0].id}`)
+            } else {
                 router.push('/')
             }
         }
-
-        loadProject()
-    }, [searchParams, router])
+    }, [projectId, projects, isLoading, router])
 
     if (isLoading || !projectId) {
         return (

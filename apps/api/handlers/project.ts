@@ -303,39 +303,128 @@ datasource db {
     }
 }
 
-// Convert Prisma schema to Drizzle format (basic conversion)
+// Convert Prisma schema to Drizzle format
 function convertToDrizzleSchema(prismaSchema: string): string {
-    // If already in Drizzle format, return as-is
-    if (prismaSchema.includes('drizzle-orm')) {
-        return prismaSchema;
+    const models: any[] = [];
+    const lines = prismaSchema.split('\n');
+    let currentModel: any = null;
+
+    // Parse Prisma Schema
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('model ')) {
+            const name = trimmed.split(' ')[1];
+            currentModel = { name, fields: [] };
+            models.push(currentModel);
+        } else if (trimmed === '}') {
+            currentModel = null;
+        } else if (currentModel && trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('@@')) {
+            const parts = trimmed.split(/\s+/);
+            if (parts.length >= 2) {
+                const [name, type] = parts;
+                const isId = trimmed.includes('@id');
+                const isUnique = trimmed.includes('@unique');
+                const isDefault = trimmed.includes('@default');
+                currentModel.fields.push({ name, type, isId, isUnique, isDefault });
+            }
+        }
     }
 
-    // For now, return the Prisma schema with a note
-    // TODO: Implement proper Prisma -> Drizzle conversion
-    return `import { pgTable, serial, text, timestamp, integer, boolean, varchar } from 'drizzle-orm/pg-core';
+    // Generate Drizzle Schema
+    let output = `import { pgTable, serial, text, integer, boolean, timestamp, varchar } from 'drizzle-orm/pg-core';\n\n`;
 
-// Converted from Prisma schema
-// Note: Manual adjustments may be needed
+    for (const model of models) {
+        output += `export const ${model.name.toLowerCase()} = pgTable('${model.name.toLowerCase()}', {\n`;
 
-${prismaSchema}
-`;
+        for (const field of model.fields) {
+            let drizzleField = '';
+
+            // Map types
+            switch (field.type) {
+                case 'Int':
+                    drizzleField = field.isId && field.isDefault ? 'serial' : 'integer';
+                    break;
+                case 'String':
+                    drizzleField = 'text';
+                    break;
+                case 'Boolean':
+                    drizzleField = 'boolean';
+                    break;
+                case 'DateTime':
+                    drizzleField = 'timestamp';
+                    break;
+                default:
+                    drizzleField = 'text'; // Fallback
+            }
+
+            output += `  ${field.name}: ${drizzleField}('${field.name}')`;
+
+            if (field.isId && !field.isDefault) output += '.primaryKey()';
+            if (field.isUnique) output += '.unique()';
+
+            output += ',\n';
+        }
+
+        output += `});\n\n`;
+    }
+
+    return output;
 }
 
-// Convert Prisma schema to SQL DDL (basic conversion)
+// Convert Prisma schema to SQL DDL
 function convertToSqlSchema(prismaSchema: string): string {
-    // If already in SQL format, return as-is
-    if (prismaSchema.includes('CREATE TABLE')) {
-        return prismaSchema;
+    const models: any[] = [];
+    const lines = prismaSchema.split('\n');
+    let currentModel: any = null;
+
+    // Parse Prisma Schema (Reuse logic or duplicate for simplicity)
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('model ')) {
+            const name = trimmed.split(' ')[1];
+            currentModel = { name, fields: [] };
+            models.push(currentModel);
+        } else if (trimmed === '}') {
+            currentModel = null;
+        } else if (currentModel && trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('@@')) {
+            const parts = trimmed.split(/\s+/);
+            if (parts.length >= 2) {
+                const [name, type] = parts;
+                const isId = trimmed.includes('@id');
+                const isUnique = trimmed.includes('@unique');
+                currentModel.fields.push({ name, type, isId, isUnique });
+            }
+        }
     }
 
-    // For now, return the Prisma schema with a note
-    // TODO: Implement proper Prisma -> SQL conversion
-    return `-- PostgreSQL Schema
--- Converted from Prisma schema
--- Note: Manual adjustments may be needed
+    let output = `-- PostgreSQL Schema\n\n`;
 
-${prismaSchema}
-`;
+    for (const model of models) {
+        output += `CREATE TABLE "${model.name}" (\n`;
+        const fields: string[] = [];
+
+        for (const field of model.fields) {
+            let sqlType = '';
+            switch (field.type) {
+                case 'Int': sqlType = field.isId ? 'SERIAL' : 'INTEGER'; break;
+                case 'String': sqlType = 'TEXT'; break;
+                case 'Boolean': sqlType = 'BOOLEAN'; break;
+                case 'DateTime': sqlType = 'TIMESTAMP'; break;
+                default: sqlType = 'TEXT';
+            }
+
+            let line = `  "${field.name}" ${sqlType}`;
+            if (field.isId) line += ' PRIMARY KEY';
+            if (field.isUnique) line += ' UNIQUE';
+
+            fields.push(line);
+        }
+
+        output += fields.join(',\n');
+        output += `\n);\n\n`;
+    }
+
+    return output;
 }
 
 function getLanguageFromExt(filename: string): string {

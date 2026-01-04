@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { CanvasRevealEffect } from "@/components/blocks/sign-in-flow-1";
 
 interface LoginFormProps {
@@ -32,11 +33,13 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         }
     };
 
+
+
     const handleAuthSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!password) return;
         if (isSignUp && !name) {
-            setError("Name is required for sign up");
+            toast.error("Name is required for sign up");
             return;
         }
 
@@ -51,10 +54,11 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                     name,
                 }, {
                     onSuccess: () => {
+                        toast.success("Account created successfully!");
                         handleSuccess();
                     },
                     onError: (ctx) => {
-                        setError(ctx.error.message || "Sign up failed");
+                        toast.error(ctx.error.message || "Sign up failed");
                         setIsLoading(false);
                     }
                 });
@@ -64,16 +68,17 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                     password,
                 }, {
                     onSuccess: () => {
+                        toast.success("Welcome back!");
                         handleSuccess();
                     },
                     onError: (ctx) => {
-                        setError(ctx.error.message || "Invalid email or password");
+                        toast.error(ctx.error.message || "Invalid email or password");
                         setIsLoading(false);
                     }
                 });
             }
-        } catch (err) {
-            setError("An unexpected error occurred");
+        } catch {
+            toast.error("An unexpected error occurred");
             setIsLoading(false);
         }
     };
@@ -122,6 +127,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
         } catch (e) {
             console.error("Failed to fetch/create project", e);
+            toast.error("Failed to load workspace");
             setTimeout(() => router.push("/workspace"), 2000);
         }
 
@@ -323,7 +329,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                                 className="space-y-6 text-center"
                             >
                                 <div className="space-y-1">
-                                    <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">You're in!</h1>
+                                    <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">You&apos;re in!</h1>
                                     <p className="text-[1.25rem] text-white/50 font-light">Setting up your workspace...</p>
                                 </div>
 
@@ -333,7 +339,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                                     transition={{ duration: 0.5, delay: 0.5 }}
                                     className="py-10"
                                 >
-                                    <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-white to-white/70 flex items-center justify-center">
+                                    <div className="mx-auto w-16 h-16 rounded-full bg-linear-to-br from-white to-white/70 flex items-center justify-center">
                                         <Loader2 className="h-8 w-8 text-black animate-spin" />
                                     </div>
                                 </motion.div>

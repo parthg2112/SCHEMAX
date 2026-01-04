@@ -6,6 +6,7 @@ import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "next-themes"
 import { Moon, Sun, LogOut, ChevronDown, Menu, Crown } from "lucide-react"
+import { toast } from "sonner"
 import { WorkspaceSelector } from "@/components/workspace-selector"
 import {
     DropdownMenu,
@@ -59,6 +60,13 @@ const UserMenu = ({
                     </p>
                 </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => toast.info("Settings coming soon!")}>
+                Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toast.info("Billing portal coming soon!")}>
+                Billing
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout} className="text-red-600 focus:text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />

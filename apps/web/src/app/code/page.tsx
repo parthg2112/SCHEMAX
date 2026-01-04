@@ -2,6 +2,9 @@
 
 import * as React from "react"
 import { Download, Loader2, Copy, Check } from "lucide-react"
+import { toast } from "sonner"
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -75,7 +78,7 @@ function CodePageContent() {
             return
         }
         fetchSchema(ormType)
-    }, [projectId, fetchSchema])
+    }, [projectId, fetchSchema, ormType])
 
     const handleOrmChange = (newOrm: string) => {
         setOrmType(newOrm)
@@ -86,6 +89,7 @@ function CodePageContent() {
         if (!schema) return
         await navigator.clipboard.writeText(schema.content)
         setCopied(true)
+        toast.success("Copied to clipboard")
         setTimeout(() => setCopied(false), 2000)
     }
 
@@ -100,6 +104,7 @@ function CodePageContent() {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
+        toast.success("Download started")
     }
 
     if (isLoading) {
@@ -164,11 +169,24 @@ function CodePageContent() {
                 {/* Schema Content */}
                 <div className="flex-1 overflow-auto">
                     {schema ? (
-                        <pre className="p-4 font-mono text-sm leading-relaxed">
-                            <code className={`language-${schema.language}`}>
+                        <div className="h-full w-full overflow-auto">
+                            <SyntaxHighlighter
+                                language={schema.language}
+                                style={vscDarkPlus}
+                                customStyle={{
+                                    margin: 0,
+                                    padding: '1.5rem',
+                                    height: '100%',
+                                    fontSize: '0.875rem',
+                                    lineHeight: '1.5',
+                                    background: 'transparent',
+                                }}
+                                showLineNumbers={true}
+                                wrapLines={true}
+                            >
                                 {schema.content}
-                            </code>
-                        </pre>
+                            </SyntaxHighlighter>
+                        </div>
                     ) : (
                         <div className="h-full w-full flex items-center justify-center text-muted-foreground">
                             No schema generated yet

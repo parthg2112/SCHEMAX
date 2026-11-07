@@ -1,44 +1,25 @@
-FROM oven/bun:1-alpine AS builder
-
+FROM node:22-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy package files
-COPY package.json bun.lockb* ./
-
-# Install dependencies
-RUN bun install --frozen-lockfile
-
-# Copy source
-COPY . .
-
-# Build argument for backend URL
+FROM node:22-alpine AS build
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
 ARG INTERNAL_BACKEND_URL=http://api
-ENV INTERNAL_BACKEND_URL=${INTERNAL_BACKEND_URL}
-
 ARG NEXT_PUBLIC_BACKEND_URL=/api
-ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+ENV INTERNAL_BACKEND_URL=$INTERNAL_BACKEND_URL NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
 
-# Build Next.js app
-RUN bun run build
-
-# Production stage - use Node for Next.js runtime (more stable)
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS run
 WORKDIR /app
-
-ENV NODE_ENV=production
-
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Copy standalone build
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-USER nextjs
-
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+USER node
 EXPOSE 3000
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1
 CMD ["node", "server.js"]
